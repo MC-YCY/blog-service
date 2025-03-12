@@ -11,7 +11,9 @@ import { RedisService } from '../../shared/service/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserVo } from '../../shared/vo/user.vo';
+import { Public } from '../../shared/decorators/public.decorator';
 
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(
