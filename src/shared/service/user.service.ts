@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
@@ -13,6 +13,10 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
+    const existingUser = await this.findByUsername(createUserDto.username);
+    if (existingUser) {
+      throw new BadRequestException('用户名已存在');
+    }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const user = this.userRepository.create({
       ...createUserDto,
@@ -28,6 +32,13 @@ export class UserService {
   async findOne(id: number): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { id },
+      relations: ['role'],
+    });
+  }
+
+  async findByUsername(username: string): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: { username },
       relations: ['role'],
     });
   }

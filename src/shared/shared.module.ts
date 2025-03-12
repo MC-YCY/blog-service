@@ -10,7 +10,7 @@ import { RoleService } from './service/role.service';
 import { UserService } from './service/user.service';
 import { ArticleService } from './service/article.service';
 import { CommentService } from './service/comment.service';
-import { AuthService } from './service/auth.service';
+import { RedisService } from './service/redis.service';
 import { JwtService } from '@nestjs/jwt';
 
 @Global()
@@ -39,7 +39,7 @@ import { JwtService } from '@nestjs/jwt';
     ArticleService,
     CommentService,
     CaptchaService,
-    AuthService,
+    RedisService,
     JwtService,
   ],
   providers: [
@@ -48,7 +48,7 @@ import { JwtService } from '@nestjs/jwt';
     ArticleService,
     CommentService,
     CaptchaService,
-    AuthService,
+    RedisService,
     JwtService,
   ],
 })
