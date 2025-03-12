@@ -22,6 +22,14 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsInt()
   roleId: number;
+
+  @IsNotEmpty()
+  @IsString()
+  captchaId: string;     // 新增：验证码 ID
+
+  @IsNotEmpty()
+  @IsString()
+  captchaCode: string;   // 新增：验证码值
 }
 
 export class LoginUserDto {
@@ -32,6 +40,14 @@ export class LoginUserDto {
   @IsNotEmpty()
   @MinLength(6)
   password: string;
+
+  @IsNotEmpty()
+  @IsString()
+  captchaId: string;     // 新增：验证码 ID
+
+  @IsNotEmpty()
+  @IsString()
+  captchaCode: string;   // 新增：验证码值
 }
 
 export class UpdateUserDto {

@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Body,
+  Get,
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
@@ -12,6 +13,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserVo } from '../../shared/vo/user.vo';
 import { Public } from '../../shared/decorators/public.decorator';
+import * as svgCaptcha from 'svg-captcha';
+import { v4 as uuidv4 } from 'uuid';
 
 @Public()
 @Controller('auth')
@@ -24,12 +27,21 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
+    await this.validateCaptcha(
+      createUserDto.captchaId,
+      createUserDto.captchaCode,
+    );
     const user = await this.userService.create(createUserDto);
     return { message: '注册成功', user };
   }
 
   @Post('login')
   async login(@Body() loginUserDto: LoginUserDto) {
+    await this.validateCaptcha(
+      loginUserDto.captchaId,
+      loginUserDto.captchaCode,
+    );
+
     const { username, password } = loginUserDto;
     const user = await this.userService.findByUsername(username);
 
@@ -112,5 +124,51 @@ export class AuthController {
     await this.redisService.del(`access_token:${userId}`);
     await this.redisService.del(`refresh_token:${userId}`);
     return { message: '登出成功' };
+  }
+
+  @Get('captcha')
+  async generateCaptcha() {
+    // 生成验证码
+    const captcha = svgCaptcha.create({
+      size: 6,
+      ignoreChars: '0o1iIl', // 排除易混淆字符
+      noise: 3, // 干扰线数量
+      color: true, // 彩色验证码
+      background: '#f0f2f5', // 背景颜色
+    });
+
+    // 生成唯一验证码 ID
+    const captchaId = uuidv4();
+
+    // 存储到 Redis（5分钟过期）
+    await this.redisService.set(
+      `captcha:${captchaId}`,
+      captcha.text.toLowerCase(), // 统一转小写存储
+      5 * 60,
+    );
+
+    // 返回 SVG 和验证码 ID
+    return {
+      captchaId,
+      svg: captcha.data,
+    };
+  }
+  private async validateCaptcha(captchaId: string, code: string) {
+    if (!captchaId || !code) {
+      throw new BadRequestException('验证码不能为空');
+    }
+
+    const storedCode = await this.redisService.get(`captcha:${captchaId}`);
+    if (!storedCode) {
+      throw new BadRequestException('验证码已过期');
+    }
+
+    if (storedCode !== code.toLowerCase()) {
+      // 统一转小写比较
+      throw new BadRequestException('验证码错误');
+    }
+
+    // 验证成功后删除 Redis 中的验证码（防止重复使用）
+    await this.redisService.del(`captcha:${captchaId}`);
   }
 }
