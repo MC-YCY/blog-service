@@ -13,6 +13,8 @@ import { RedisService } from './service/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import { Permission } from './entities/permission.entity';
 import { PermissionService } from './service/permission.service';
+import { Dict } from './entities/dict.entity';
+import { DictService } from './service/dict.service';
 
 @Global()
 @Module({
@@ -32,7 +34,7 @@ import { PermissionService } from './service/permission.service';
         synchronize: process.env.NODE_ENV !== 'production', // 生产环境不要自动同步数据库
       }),
     }),
-    TypeOrmModule.forFeature([User, Role, Article, Comment, Permission]),
+    TypeOrmModule.forFeature([User, Role, Article, Comment, Permission, Dict]),
   ],
   exports: [
     RoleService,
@@ -42,6 +44,7 @@ import { PermissionService } from './service/permission.service';
     RedisService,
     JwtService,
     PermissionService,
+    DictService,
   ],
   providers: [
     RoleService,
@@ -51,6 +54,7 @@ import { PermissionService } from './service/permission.service';
     RedisService,
     JwtService,
     PermissionService,
+    DictService,
   ],
 })
 export class SharedModule {}
