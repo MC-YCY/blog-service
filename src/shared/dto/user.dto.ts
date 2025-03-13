@@ -20,16 +20,12 @@ export class CreateUserDto {
   avatar?: string;
 
   @IsNotEmpty()
-  @IsInt()
-  roleId: number;
+  @IsString()
+  captchaId: string; // 新增：验证码 ID
 
   @IsNotEmpty()
   @IsString()
-  captchaId: string;     // 新增：验证码 ID
-
-  @IsNotEmpty()
-  @IsString()
-  captchaCode: string;   // 新增：验证码值
+  captchaCode: string; // 新增：验证码值
 }
 
 export class LoginUserDto {
@@ -43,11 +39,11 @@ export class LoginUserDto {
 
   @IsNotEmpty()
   @IsString()
-  captchaId: string;     // 新增：验证码 ID
+  captchaId: string; // 新增：验证码 ID
 
   @IsNotEmpty()
   @IsString()
-  captchaCode: string;   // 新增：验证码值
+  captchaCode: string; // 新增：验证码值
 }
 
 export class UpdateUserDto {

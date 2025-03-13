@@ -5,6 +5,7 @@ import {
   Get,
   UnauthorizedException,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { UserService } from '../../shared/service/user.service';
 import { LoginUserDto, CreateUserDto } from '../../shared/dto/user.dto';
@@ -16,7 +17,6 @@ import { Public } from '../../shared/decorators/public.decorator';
 import * as svgCaptcha from 'svg-captcha';
 import { v4 as uuidv4 } from 'uuid';
 
-@Public()
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -25,6 +25,7 @@ export class AuthController {
     private readonly jwtService: JwtService,
   ) {}
 
+  @Public()
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     await this.validateCaptcha(
@@ -35,6 +36,7 @@ export class AuthController {
     return { message: '注册成功', user };
   }
 
+  @Public()
   @Post('login')
   async login(@Body() loginUserDto: LoginUserDto) {
     await this.validateCaptcha(
@@ -119,6 +121,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('logout')
   async logout(@Body('userId') userId: number) {
     await this.redisService.del(`access_token:${userId}`);
@@ -126,6 +129,7 @@ export class AuthController {
     return { message: '登出成功' };
   }
 
+  @Public()
   @Get('captcha')
   async generateCaptcha() {
     // 生成验证码
@@ -135,9 +139,10 @@ export class AuthController {
       noise: 3, // 干扰线数量
       color: true, // 彩色验证码
     });
-
     // 生成唯一验证码 ID
     const captchaId = uuidv4();
+    console.log(captcha.text);
+    console.log(captchaId);
 
     // 存储到 Redis（5分钟过期）
     await this.redisService.set(
@@ -169,5 +174,39 @@ export class AuthController {
 
     // 验证成功后删除 Redis 中的验证码（防止重复使用）
     await this.redisService.del(`captcha:${captchaId}`);
+  }
+
+  @Get('permissions')
+  getPermissions(@Req() request: any) {
+    // 从请求头中获取 token
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
+    const token = request.headers['authorization']?.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('未提供 token');
+    }
+
+    // 解析 token，获取用户信息
+    let decoded: any;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-argument
+      decoded = this.jwtService.verify(token);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
+      throw new UnauthorizedException('无效的 token');
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (decoded.username === 'yin2646403766') {
+      return {
+        btnList: [
+          {
+            label: '新增文章',
+            value: 'add-article',
+          },
+        ],
+      };
+    }
+    return {
+      btnList: [],
+    };
   }
 }
