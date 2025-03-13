@@ -130,11 +130,10 @@ export class AuthController {
   async generateCaptcha() {
     // 生成验证码
     const captcha = svgCaptcha.create({
-      size: 6,
+      size: 4,
       ignoreChars: '0o1iIl', // 排除易混淆字符
       noise: 3, // 干扰线数量
       color: true, // 彩色验证码
-      background: '#f0f2f5', // 背景颜色
     });
 
     // 生成唯一验证码 ID

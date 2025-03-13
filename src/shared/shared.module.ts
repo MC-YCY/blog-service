@@ -5,7 +5,6 @@ import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Article } from './entities/article.entity';
 import { Comment } from './entities/comment.entity';
-import { CaptchaService } from './service/captcha.service';
 import { RoleService } from './service/role.service';
 import { UserService } from './service/user.service';
 import { ArticleService } from './service/article.service';
@@ -38,7 +37,6 @@ import { JwtService } from '@nestjs/jwt';
     UserService,
     ArticleService,
     CommentService,
-    CaptchaService,
     RedisService,
     JwtService,
   ],
@@ -47,7 +45,6 @@ import { JwtService } from '@nestjs/jwt';
     UserService,
     ArticleService,
     CommentService,
-    CaptchaService,
     RedisService,
     JwtService,
   ],

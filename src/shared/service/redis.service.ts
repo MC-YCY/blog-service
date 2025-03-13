@@ -31,11 +31,7 @@ export class RedisService implements OnModuleDestroy {
     }
   }
 
-  async set(
-    key: string,
-    value: string,
-    ttl?: number,
-  ): Promise<'OK' | null> {
+  async set(key: string, value: string, ttl?: number): Promise<'OK' | null> {
     try {
       if (ttl) {
         return await this.redis.set(key, value, 'EX', ttl);

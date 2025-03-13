@@ -16,6 +16,7 @@ export class ResponseInterceptor implements NestInterceptor {
       map((data: Record<any, any>) => ({
         code: 200,
         data,
+        success: true,
         message: 'success',
       })),
     );
