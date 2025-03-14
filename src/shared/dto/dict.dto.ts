@@ -1,6 +1,14 @@
 // src/dict/dto/create-dict.dto.ts
-import { IsArray, IsBoolean, IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsOptional,
+} from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 class DictEntryDto {
   @IsString()
@@ -11,16 +19,11 @@ class DictEntryDto {
 }
 
 export class CreateDictDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: '名称不能为空' })
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: '类型不能为空' })
   type: string;
-
-  @IsArray()
-  entries: DictEntryDto[];
 
   @IsBoolean()
   status: boolean;
@@ -28,9 +31,15 @@ export class CreateDictDto {
   @IsNumber()
   sort: number;
 
-  @IsString()
-  remark: string;
+  @IsOptional()
+  remark?: string;
+
+  @IsArray()
+  entries: Array<{ label: string; value: string }>;
 }
 
 // src/dict/dto/update-dict.dto.ts
-export class UpdateDictDto extends PartialType(CreateDictDto) {}
+export class UpdateDictDto extends PartialType(CreateDictDto) {
+  @ApiPropertyOptional({ description: '字典条目' })
+  entries?: Array<{ label: string; value: string }>;
+}

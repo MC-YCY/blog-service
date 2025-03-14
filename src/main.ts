@@ -7,6 +7,7 @@ import { ResponseInterceptor } from './shared/interceptor/response.interceptor';
 import { JwtAuthGuard } from './shared/guards/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from './shared/service/redis.service';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -36,6 +37,16 @@ async function bootstrap() {
       },
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('API 文档')
+    .setDescription('系统接口文档')
+    .setVersion('1.0')
+    .addBearerAuth() // 启用 Bearer Token 认证
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document); // 访问路径为 /api
 
   await app.listen(3000);
 }
