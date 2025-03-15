@@ -7,11 +7,6 @@ import {
 } from 'typeorm';
 import { Role } from './role.entity';
 
-export enum PermissionType {
-  MENU = 'MENU',
-  BUTTON = 'BUTTON',
-}
-
 @Entity()
 export class Permission {
   @PrimaryGeneratedColumn()
@@ -20,12 +15,11 @@ export class Permission {
   @Column()
   name: string;
 
-  @Column({
-    type: 'enum',
-    enum: PermissionType,
-    default: PermissionType.MENU,
-  })
-  type: PermissionType;
+  @Column()
+  type: string;
+
+  @Column()
+  description: string;
 
   @Column({ unique: true })
   code: string;

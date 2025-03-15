@@ -1,18 +1,37 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { PermissionType } from '../entities/permission.entity';
-import { PartialType } from '@nestjs/mapped-types';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreatePermissionDto {
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @IsEnum(PermissionType)
-  type: PermissionType;
-
   @IsString()
   @IsNotEmpty()
   code: string;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
 }
 
-export class UpdatePermissionDto extends PartialType(CreatePermissionDto) {}
+export class UpdatePermissionDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}

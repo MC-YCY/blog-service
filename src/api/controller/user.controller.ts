@@ -15,12 +15,7 @@ import {
   UpdateUserDto,
 } from '../../shared/dto/user.dto';
 import { UserService } from '../../shared/service/user.service';
-import {
-  ApiTags,
-  ApiQuery,
-  ApiResponse,
-  ApiOperation,
-} from '@nestjs/swagger';
+import { ApiTags, ApiQuery, ApiResponse, ApiOperation } from '@nestjs/swagger';
 import { User } from '../../shared/entities/user.entity';
 import { UpdateRoleDto } from '../../shared/dto/role.dto';
 
