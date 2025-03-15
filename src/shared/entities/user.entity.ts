@@ -17,13 +17,19 @@ export class User {
   id: number;
 
   @Column({ unique: true })
+  account: string;
+
+  @Column({ unique: true })
   username: string;
 
   @Column()
   password: string;
 
-  @Column({ default: '' })
+  @Column()
   avatar: string;
+
+  @Column({ default: '' })
+  changeLog: string;
 
   // 用户角色（多对一）
   @ManyToOne(() => Role, (role) => role.users)

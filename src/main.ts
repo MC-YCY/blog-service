@@ -8,9 +8,11 @@ import { JwtAuthGuard } from './shared/guards/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from './shared/service/redis.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // 前缀
   app.setGlobalPrefix('blog');
@@ -47,6 +49,10 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document); // 访问路径为 /api
+
+  // 调整请求体限制为1.5MB（考虑JSON元数据）
+  app.use(json({ limit: '1.5mb' }));
+  app.use(urlencoded({ extended: true, limit: '1.5mb' }));
 
   await app.listen(3000);
 }

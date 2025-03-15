@@ -7,7 +7,9 @@ import {
   Query,
   Param,
   ConflictException,
-  NotFoundException, Put, Delete,
+  NotFoundException,
+  Put,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { DictService } from '../../shared/service/dict.service';
@@ -25,9 +27,9 @@ export class DictController {
   async create(@Body() createDictDto: CreateDictDto) {
     try {
       return await this.dictService.create(createDictDto);
-    } catch (error: any) {
-      if (error.message === '字典类型已存在') {
-        throw new ConflictException(error.message);
+    } catch (error) {
+      if (error instanceof Error && error?.message === '字典类型已存在') {
+        throw new ConflictException(error?.message);
       }
       throw error;
     }

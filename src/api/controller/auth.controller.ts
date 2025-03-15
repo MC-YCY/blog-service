@@ -44,8 +44,8 @@ export class AuthController {
       loginUserDto.captchaCode,
     );
 
-    const { username, password } = loginUserDto;
-    const user = await this.userService.findByUsername(username);
+    const { account, password } = loginUserDto;
+    const user = await this.userService.findByAccount(account);
 
     if (!user) {
       throw new UnauthorizedException('用户名或密码错误');
@@ -57,11 +57,11 @@ export class AuthController {
     }
 
     const accessToken = this.jwtService.sign(
-      { userId: user.id, username: user.username },
+      { userId: user.id, account: user.account },
       { expiresIn: '1h' },
     );
     const refreshToken = this.jwtService.sign(
-      { userId: user.id, username: user.username },
+      { userId: user.id, account: user.account },
       { expiresIn: '7d' },
     );
     // 将令牌存储在Redis中
@@ -76,7 +76,7 @@ export class AuthController {
       7 * 24 * 60 * 60, // 7天过期
     );
     const userVo = new UserVo();
-    userVo.username = user.username;
+    userVo.account = user.account;
     userVo.id = user.id;
     userVo.role = user.role;
     userVo.avatar = user.avatar;
@@ -102,7 +102,7 @@ export class AuthController {
       }
 
       const newAccessToken = this.jwtService.sign(
-        { userId: decoded.userId, username: decoded.username },
+        { userId: decoded.userId, account: decoded.account },
         { expiresIn: '1h' },
       );
 
@@ -132,31 +132,28 @@ export class AuthController {
   @Public()
   @Get('captcha')
   async generateCaptcha() {
-    // 生成验证码
     const captcha = svgCaptcha.create({
       size: 4,
-      ignoreChars: '0o1iIl', // 排除易混淆字符
-      noise: 3, // 干扰线数量
-      color: true, // 彩色验证码
+      ignoreChars: '0o1iIl',
+      noise: 3,
+      color: true,
     });
-    // 生成唯一验证码 ID
     const captchaId = uuidv4();
     console.log(captcha.text);
     console.log(captchaId);
 
-    // 存储到 Redis（5分钟过期）
     await this.redisService.set(
       `captcha:${captchaId}`,
-      captcha.text.toLowerCase(), // 统一转小写存储
+      captcha.text.toLowerCase(),
       5 * 60,
     );
 
-    // 返回 SVG 和验证码 ID
     return {
       captchaId,
       svg: captcha.data,
     };
   }
+
   private async validateCaptcha(captchaId: string, code: string) {
     if (!captchaId || !code) {
       throw new BadRequestException('验证码不能为空');
@@ -168,34 +165,35 @@ export class AuthController {
     }
 
     if (storedCode !== code.toLowerCase()) {
-      // 统一转小写比较
       throw new BadRequestException('验证码错误');
     }
 
-    // 验证成功后删除 Redis 中的验证码（防止重复使用）
     await this.redisService.del(`captcha:${captchaId}`);
   }
 
   @Get('permissions')
-  getPermissions(@Req() request: any) {
-    // 从请求头中获取 token
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
+  getPermissions(@Req() request: Request) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
     const token = request.headers['authorization']?.split(' ')[1];
     if (!token) {
       throw new UnauthorizedException('未提供 token');
     }
 
-    // 解析 token，获取用户信息
-    let decoded: any;
+    let decoded: { account: string } | null = null;
+
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-argument
-      decoded = this.jwtService.verify(token);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      decoded = this.jwtService.verify(token) as { account: string };
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       throw new UnauthorizedException('无效的 token');
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (decoded.username === 'yin2646403766') {
+
+    if (!decoded || !decoded.account) {
+      throw new UnauthorizedException('无效的 token 数据');
+    }
+
+    if (decoded.account === 'yin2646403766') {
       return {
         btnList: [
           {
@@ -205,6 +203,7 @@ export class AuthController {
         ],
       };
     }
+
     return {
       btnList: [],
     };

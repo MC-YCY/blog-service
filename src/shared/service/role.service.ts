@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Role } from '../entities/role.entity';
-import { CreateRoleDto } from '../dto/role.dto';
+import { CreateRoleDto, UpdateRoleDto } from '../dto/role.dto';
 
 @Injectable()
 export class RoleService {
@@ -16,11 +16,57 @@ export class RoleService {
     return await this.roleRepository.save(role);
   }
 
-  async findAll(): Promise<Role[]> {
-    return await this.roleRepository.find();
+  /**
+   * 分页查询角色数据
+   * @param page 当前页码，默认为 1
+   * @param limit 每页显示条数，默认为 10
+   * @param name
+   * @returns 返回 {records, total} 格式数据
+   */
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    name?: string, // 新增可选名称参数
+  ): Promise<{ records: Role[]; total: number }> {
+    // 构建动态查询条件
+    const where: Record<string, any> = {};
+
+    if (name) {
+      where.name = Like(`%${name}%`); // 模糊查询
+    }
+
+    const [records, total] = await this.roleRepository.findAndCount({
+      where, // 注入查询条件
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { records, total };
   }
 
   async findOne(id: number): Promise<Role | null> {
     return await this.roleRepository.findOne({ where: { id } });
+  }
+
+  async delete(id: number): Promise<void> {
+    const result = await this.roleRepository.delete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException('角色不存在');
+    }
+  }
+
+  async update(id: number, updateRoleDto: UpdateRoleDto): Promise<Role> {
+    // 先查询是否存在
+    const role = await this.roleRepository.findOne({ where: { id } });
+    if (!role) {
+      throw new NotFoundException('角色不存在');
+    }
+
+    // 合并更新数据
+    const updatedRole = this.roleRepository.merge(role, updateRoleDto);
+
+    // 使用 save 以确保触发实体钩子
+    return await this.roleRepository.save(updatedRole);
   }
 }

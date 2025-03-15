@@ -1,23 +1,77 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  Delete,
+  ParseIntPipe,
+  Put,
+} from '@nestjs/common';
 import { RoleService } from '../../shared/service/role.service';
-import { CreateRoleDto } from '../../shared/dto/role.dto';
+import { CreateRoleDto, UpdateRoleDto } from '../../shared/dto/role.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 
+@ApiTags('roles')
 @Controller('roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Post()
+  @ApiOperation({ summary: '创建角色' })
+  @ApiResponse({ status: 201, description: '角色创建成功' })
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.roleService.create(createRoleDto);
   }
 
   @Get()
-  findAll() {
-    return this.roleService.findAll();
+  @ApiOperation({ summary: '分页查询角色' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '当前页码，默认值为1',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: '每页显示的条数，默认值为10',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '返回分页数据，格式为 { records, total }',
+  })
+  findAll(
+    @Query('pageNo') pageNo: string,
+    @Query('pageSize') pageSize: string,
+    @Query('name') name?: string,
+  ) {
+    const pageNumber = Number(pageNo) || 1;
+    const limitNumber = Number(pageSize) || 10;
+    return this.roleService.findAll(pageNumber, limitNumber, name);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: '根据ID查询角色' })
+  @ApiResponse({ status: 200, description: '查询成功' })
   findOne(@Param('id') id: number) {
     return this.roleService.findOne(id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: '根据ID删除角色' })
+  delete(@Param('id', ParseIntPipe) id: number) {
+    return this.roleService.delete(id);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: '更新角色信息' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateRoleDto: UpdateRoleDto,
+  ) {
+    return this.roleService.update(id, updateRoleDto);
   }
 }
