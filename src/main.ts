@@ -21,6 +21,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
   // 异常过滤器，同权限添加的
   app.useGlobalFilters(new HttpExceptionFilter());
+
   // token 验证的
   app.useGlobalGuards(
     new JwtAuthGuard(

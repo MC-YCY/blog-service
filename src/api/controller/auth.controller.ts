@@ -57,11 +57,11 @@ export class AuthController {
     }
 
     const accessToken = this.jwtService.sign(
-      { userId: user.id, account: user.account, roleCode: user.role.code },
+      { userId: user.id, account: user.account },
       { expiresIn: '1h' },
     );
     const refreshToken = this.jwtService.sign(
-      { userId: user.id, account: user.account, roleCode: user.role.code },
+      { userId: user.id, account: user.account },
       { expiresIn: '7d' },
     );
     // 将令牌存储在Redis中
@@ -74,6 +74,11 @@ export class AuthController {
       `refresh_token:${user.id}`,
       refreshToken,
       7 * 24 * 60 * 60, // 7天过期
+    );
+    await this.redisService.set(
+      `token:${accessToken}:role`, // 以 Token 为键存储角色
+      user.role.code,
+      60 * 60, // 与 access_token 过期时间一致
     );
     const userVo = new UserVo();
     userVo.account = user.account;
