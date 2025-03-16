@@ -57,11 +57,11 @@ export class AuthController {
     }
 
     const accessToken = this.jwtService.sign(
-      { userId: user.id, account: user.account },
+      { userId: user.id, account: user.account, roleCode: user.role.code },
       { expiresIn: '1h' },
     );
     const refreshToken = this.jwtService.sign(
-      { userId: user.id, account: user.account },
+      { userId: user.id, account: user.account, roleCode: user.role.code },
       { expiresIn: '7d' },
     );
     // 将令牌存储在Redis中

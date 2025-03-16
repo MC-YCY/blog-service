@@ -10,6 +10,7 @@ import { RedisService } from './shared/service/redis.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
+import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -18,6 +19,8 @@ async function bootstrap() {
   app.setGlobalPrefix('blog');
   // 全局响应拦截器
   app.useGlobalInterceptors(new ResponseInterceptor());
+  // 异常过滤器，同权限添加的
+  app.useGlobalFilters(new HttpExceptionFilter());
   // token 验证的
   app.useGlobalGuards(
     new JwtAuthGuard(
