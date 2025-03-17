@@ -75,6 +75,11 @@ export class AuthController {
       refreshToken,
       7 * 24 * 60 * 60, // 7天过期
     );
+    await this.redisService.set(
+      `token:${accessToken}:role`, // 以 Token 为键存储角色
+      user.role.code,
+      60 * 60, // 与 access_token 过期时间一致
+    );
     const userVo = new UserVo();
     userVo.account = user.account;
     userVo.id = user.id;

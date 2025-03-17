@@ -4,7 +4,8 @@ import {
   IsOptional,
   MinLength,
   MaxLength,
-  IsUUID, IsInt,
+  IsUUID,
+  IsInt,
 } from 'class-validator';
 
 export class CreateUserDto {

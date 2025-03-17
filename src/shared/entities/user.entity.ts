@@ -32,7 +32,7 @@ export class User {
   changeLog: string;
 
   // 用户角色（多对一）
-  @ManyToOne(() => Role, (role) => role.users)
+  @ManyToOne(() => Role, (role) => role.users, { eager: true })
   role: Role;
 
   // 用户发表的文章（一对多）

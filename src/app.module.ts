@@ -18,7 +18,5 @@ import { ApiModule } from './api/api.module';
   ],
 })
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-
-  }
+  configure(consumer: MiddlewareConsumer) {}
 }

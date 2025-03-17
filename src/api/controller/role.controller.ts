@@ -8,9 +8,15 @@ import {
   Delete,
   ParseIntPipe,
   Put,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { RoleService } from '../../shared/service/role.service';
-import { CreateRoleDto, UpdateRoleDto } from '../../shared/dto/role.dto';
+import {
+  CreateRoleDto,
+  RoleUsersPaginationDto,
+  UpdateRoleDto,
+} from '../../shared/dto/role.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('roles')
@@ -73,5 +79,41 @@ export class RoleController {
     @Body() updateRoleDto: UpdateRoleDto,
   ) {
     return this.roleService.update(id, updateRoleDto);
+  }
+
+  @Get(':id/users')
+  async getRoleWithUsers(
+    @Param('id') id: number,
+    @Query() query: RoleUsersPaginationDto,
+  ) {
+    try {
+      return await this.roleService.findRoleUsers(
+        id,
+        query.page,
+        query.limit,
+        query.orderBy,
+        query.order,
+      );
+    } catch (e) {
+      if (e instanceof NotFoundException) throw e;
+      throw new BadRequestException(e.message);
+    }
+  }
+
+  @Get(':id/permissions')
+  async getRoleWithPermissions(@Param('id') id: number) {
+    const role = await this.roleService.findRolePermissions(id);
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+    return role;
+  }
+
+  @Put(':id/permissions')
+  async updateRolePermissions(
+    @Param('id') id: number,
+    @Body() body: { permissionIds: number[] },
+  ) {
+    return this.roleService.updateRolePermissions(id, body.permissionIds);
   }
 }
