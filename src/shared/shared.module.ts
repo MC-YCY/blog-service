@@ -15,6 +15,8 @@ import { Permission } from './entities/permission.entity';
 import { PermissionService } from './service/permission.service';
 import { Dict } from './entities/dict.entity';
 import { DictService } from './service/dict.service';
+import { Menu } from './entities/menu.entity';
+import { MenuService } from './service/menu.service';
 
 @Global()
 @Module({
@@ -34,7 +36,15 @@ import { DictService } from './service/dict.service';
         synchronize: process.env.NODE_ENV !== 'production', // 生产环境不要自动同步数据库
       }),
     }),
-    TypeOrmModule.forFeature([User, Role, Article, Comment, Permission, Dict]),
+    TypeOrmModule.forFeature([
+      User,
+      Role,
+      Article,
+      Comment,
+      Permission,
+      Dict,
+      Menu,
+    ]),
   ],
   exports: [
     RoleService,
@@ -45,6 +55,7 @@ import { DictService } from './service/dict.service';
     JwtService,
     PermissionService,
     DictService,
+    MenuService,
   ],
   providers: [
     RoleService,
@@ -55,6 +66,7 @@ import { DictService } from './service/dict.service';
     JwtService,
     PermissionService,
     DictService,
+    MenuService,
   ],
 })
 export class SharedModule {}

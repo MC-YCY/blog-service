@@ -8,6 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DictController } from './controller/dict.controller';
 import { PermissionController } from './controller/permission.controller';
+import { MenuController } from './controller/menu.controller';
 
 @Module({
   controllers: [
@@ -18,6 +19,7 @@ import { PermissionController } from './controller/permission.controller';
     AuthController,
     DictController,
     PermissionController,
+    MenuController,
   ],
   imports: [
     JwtModule.registerAsync({

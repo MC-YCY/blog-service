@@ -4,9 +4,11 @@ import {
   Column,
   OneToMany,
   ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Permission } from './permission.entity';
+import { Menu } from './menu.entity';
 
 @Entity()
 export class Role {
@@ -24,4 +26,8 @@ export class Role {
 
   @ManyToMany(() => Permission, (permission) => permission.roles)
   permissions: Permission[];
+
+  @ManyToMany(() => Menu, (menu) => menu.roles)
+  @JoinTable() // 自动生成中间表
+  menus: Menu[];
 }

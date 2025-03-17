@@ -1,14 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { Role } from '../entities/role.entity';
-import { CreateRoleDto, UpdateRoleDto } from '../dto/role.dto';
+import {
+  AssignResourcesDto,
+  CreateRoleDto,
+  UpdateRoleDto,
+} from '../dto/role.dto';
+import { Menu } from '../entities/menu.entity';
 
 @Injectable()
 export class RoleService {
   constructor(
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+
+    @InjectRepository(Menu)
+    private menuRepository: Repository<Menu>,
   ) {}
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
@@ -68,5 +76,28 @@ export class RoleService {
 
     // 使用 save 以确保触发实体钩子
     return await this.roleRepository.save(updatedRole);
+  }
+
+  /**
+   * 分配资源给角色
+   * @param assignDto 分配资源的DTO，包括角色ID和资源ID数组
+   */
+  async assignResources(assignDto: AssignResourcesDto): Promise<Role> {
+    const { roleId, resourceIds } = assignDto;
+    // 推荐使用 findOne({ where: { id } }) 或 findOneBy({ id })
+    const role = await this.roleRepository.findOne({
+      where: { id: roleId },
+      relations: ['menus'], // 假设 Role 与 Menu 存在多对多关系
+    });
+    if (!role) {
+      throw new NotFoundException('角色不存在');
+    }
+
+    // 替换弃用的 findByIds 方法，使用 In 操作符搭配 find 方法查询菜单
+    role.menus = await this.menuRepository.find({
+      where: { id: In(resourceIds) },
+    });
+
+    return this.roleRepository.save(role);
   }
 }
