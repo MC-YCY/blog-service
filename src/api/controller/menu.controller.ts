@@ -57,4 +57,16 @@ export class MenuController {
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<any> {
     return await this.menuService.findOneById(id);
   }
+
+  // 根据用户 ID 获取菜单 ID 列表
+  @Get('ids/:userId')
+  async getMenuIds(@Param('userId', ParseIntPipe) userId: number) {
+    return this.menuService.getMenuIdsByUserId(userId);
+  }
+
+  // 获取所有菜单的树结构
+  @Get('/all')
+  async getMenuTree() {
+    return this.menuService.getMenuTree();
+  }
 }

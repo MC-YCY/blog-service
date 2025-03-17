@@ -1,14 +1,18 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Menu } from '../entities/menu.entity';
-import { IsNull, TreeRepository } from 'typeorm';
+import { IsNull, Repository, TreeRepository } from 'typeorm';
 import { CreateMenuDto, UpdateMenuDto } from '../dto/menu.dto';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class MenuService {
   constructor(
     @InjectRepository(Menu)
     private readonly menuRepository: TreeRepository<Menu>,
+
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   // 添加菜单
@@ -54,14 +58,36 @@ export class MenuService {
     return this.menuRepository.save(menu);
   }
 
-  // 删除菜单
+  // 删除菜单及其所有子菜单
   async delete(id: number): Promise<void> {
-    const menu = await this.menuRepository.findOne({ where: { id } });
+    const menu = await this.menuRepository.findOne({
+      where: { id },
+      relations: ['children'],
+    });
+
     if (!menu) {
       throw new NotFoundException('菜单不存在');
     }
+
+    // 递归删除所有子菜单
+    if (menu.children && menu.children.length > 0) {
+      for (const child of menu.children) {
+        await this.delete(child.id);
+      }
+    }
+
+    // 最后删除当前菜单
     await this.menuRepository.remove(menu);
   }
+
+  transformTree = (menu: Menu): Menu => {
+    if (!menu.children || menu.children.length === 0) {
+      menu.children = null;
+    } else {
+      menu.children = menu.children.map(this.transformTree);
+    }
+    return menu;
+  };
 
   // 分页查询树形结构菜单，返回 { records, total }
   async findAllPaginated(
@@ -78,7 +104,9 @@ export class MenuService {
 
     // 对每个顶级菜单加载完整树形结构
     const records = await Promise.all(
-      roots.map(async (root) => this.menuRepository.findDescendantsTree(root)),
+      roots.map(async (root) =>
+        this.transformTree(await this.menuRepository.findDescendantsTree(root)),
+      ),
     );
 
     return { records, total };
@@ -117,5 +145,24 @@ export class MenuService {
       ...menu,
       parentId: menu.parent ? menu.parent.id : null,
     };
+  }
+
+  // 根据用户 ID 获取其角色的菜单 ID 列表
+  async getMenuIdsByUserId(userId: number): Promise<number[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['role', 'role.menus'],
+    });
+
+    if (!user || !user.role) {
+      return [];
+    }
+
+    // 获取该用户所属角色的所有菜单 ID
+    return user.role.menus.map((menu) => menu.id);
+  }
+  // 获取所有菜单的树结构
+  async getMenuTree(): Promise<Menu[]> {
+    return await this.menuRepository.findTrees();
   }
 }

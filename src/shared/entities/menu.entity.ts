@@ -46,8 +46,8 @@ export class Menu {
   @TreeParent() // 父菜单
   parent: Menu | null;
 
-  @TreeChildren() // 子菜单列表
-  children: Menu[];
+  @TreeChildren({ cascade: true }) // 子菜单列表
+  children: Menu[] | null;
 
   @ManyToMany(() => Role, (role) => role.menus) // 与角色的多对多关系
   roles: Role[];
