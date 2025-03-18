@@ -18,11 +18,15 @@ import {
   UpdateRoleDto,
 } from '../../shared/dto/role.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { MenuService } from '../../shared/service/menu.service';
 
 @ApiTags('roles')
 @Controller('roles')
 export class RoleController {
-  constructor(private readonly roleService: RoleService) {}
+  constructor(
+    private readonly roleService: RoleService,
+    private readonly menuService: MenuService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: '创建角色' })
@@ -115,5 +119,13 @@ export class RoleController {
     @Body() body: { permissionIds: number[] },
   ) {
     return this.roleService.updateRolePermissions(id, body.permissionIds);
+  }
+
+  @Put(':id/menus')
+  async updateRoleMenus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('menuIds') menuIds: number[],
+  ) {
+    return this.menuService.setRoleMenus(id, menuIds);
   }
 }

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Role } from '../entities/role.entity';
@@ -65,11 +69,18 @@ export class RoleService {
   }
 
   async delete(id: number): Promise<void> {
-    const result = await this.roleRepository.delete(id);
+    // 先检查该角色是否被用户引用
+    const usersWithRole = await this.userRepository.count({
+      where: { role: { id } }, // 这里应该是 roleId，而不是 id
+    });
 
-    if (result.affected === 0) {
-      throw new NotFoundException('角色不存在');
+    if (usersWithRole > 0) {
+      throw new BadRequestException(
+        `无法删除角色 ID ${id}，因为仍然有 ${usersWithRole} 个用户使用该角色`,
+      );
     }
+
+    await this.roleRepository.delete(id);
   }
 
   async update(id: number, updateRoleDto: UpdateRoleDto): Promise<Role> {

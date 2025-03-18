@@ -1,9 +1,14 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Menu } from '../entities/menu.entity';
-import { IsNull, Repository, TreeRepository } from 'typeorm';
+import { In, IsNull, Repository, TreeRepository } from 'typeorm';
 import { CreateMenuDto, UpdateMenuDto } from '../dto/menu.dto';
 import { User } from '../entities/user.entity';
+import { Role } from '../entities/role.entity';
 
 @Injectable()
 export class MenuService {
@@ -13,10 +18,39 @@ export class MenuService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
   ) {}
+
+  // 新增时，验证字段，是否已经存在库中
+  async validateMenuUniqueness(createMenuDto: CreateMenuDto) {
+    const { code, path, component } = createMenuDto;
+
+    const existingMenu = await this.menuRepository.findOne({
+      where: [
+        code ? { code } : {},
+        path ? { path } : {},
+        component ? { component } : {},
+      ],
+    });
+
+    if (existingMenu) {
+      if (code && existingMenu.code === code) {
+        throw new ConflictException(`Code ${code} 已存在`);
+      }
+      if (path && existingMenu.path === path) {
+        throw new ConflictException(`Path ${path} 已存在`);
+      }
+      if (component && existingMenu.component === component) {
+        throw new ConflictException(`Component ${component} 已存在`);
+      }
+    }
+  }
 
   // 添加菜单
   async create(createMenuDto: CreateMenuDto): Promise<Menu> {
+    await this.validateMenuUniqueness(createMenuDto);
     const menu = this.menuRepository.create(createMenuDto);
     if (createMenuDto.parentId) {
       const parent = await this.menuRepository.findOne({
@@ -33,8 +67,36 @@ export class MenuService {
     return this.menuRepository.save(menu);
   }
 
+  // 更新时校验字段是否存在过
+  async validateMenuUniquenessForUpdate(
+    id: number,
+    updateMenuDto: UpdateMenuDto,
+  ) {
+    const { code, path, component } = updateMenuDto;
+
+    const existingMenu = await this.menuRepository.findOne({
+      where: [
+        code ? { code } : {},
+        path ? { path } : {},
+        component ? { component } : {},
+      ],
+    });
+
+    if (existingMenu && existingMenu.id !== id) {
+      if (code && existingMenu.code === code) {
+        throw new ConflictException(`Code ${code} 已存在`);
+      }
+      if (path && existingMenu.path === path) {
+        throw new ConflictException(`Path ${path} 已存在`);
+      }
+      if (component && existingMenu.component === component) {
+        throw new ConflictException(`Component ${component} 已存在`);
+      }
+    }
+  }
   // 修改菜单
   async update(id: number, updateMenuDto: UpdateMenuDto): Promise<Menu> {
+    await this.validateMenuUniquenessForUpdate(id, updateMenuDto);
     const menu = await this.menuRepository.findOne({ where: { id } });
     if (!menu) {
       throw new NotFoundException('菜单不存在');
@@ -148,21 +210,46 @@ export class MenuService {
   }
 
   // 根据用户 ID 获取其角色的菜单 ID 列表
-  async getMenuIdsByUserId(userId: number): Promise<number[]> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['role', 'role.menus'],
+  async getMenuIdsByUserId(roleId: number): Promise<number[]> {
+    const role = await this.roleRepository.findOne({
+      where: { id: roleId },
+      relations: ['menus'],
     });
-
-    if (!user || !user.role) {
-      return [];
+    if (!role) {
+      throw new NotFoundException(`角色 ID ${roleId} 不存在`);
     }
-
-    // 获取该用户所属角色的所有菜单 ID
-    return user.role.menus.map((menu) => menu.id);
+    return role.menus.map((menu) => menu.id);
   }
   // 获取所有菜单的树结构
   async getMenuTree(): Promise<Menu[]> {
     return await this.menuRepository.findTrees();
+  }
+
+  /**
+   * 根据角色 ID 和菜单 ID 列表设置角色的菜单关系
+   * @param roleId 角色 ID
+   * @param menuIds 菜单 ID 数组
+   * @returns 更新后的 Role 实体
+   */
+  async setRoleMenus(roleId: number, menuIds: number[]): Promise<Role> {
+    // 查找角色，并加载已关联的菜单
+    const role = await this.roleRepository.findOne({
+      where: { id: roleId },
+      relations: ['menus'],
+    });
+    if (!role) {
+      throw new NotFoundException(`角色 ID ${roleId} 不存在`);
+    }
+    // 使用 In 查询所有指定的菜单
+    const menus = await this.menuRepository.find({
+      where: { id: In(menuIds) },
+    });
+    if (menus.length !== menuIds.length) {
+      throw new NotFoundException(`部分菜单 ID 不存在`);
+    }
+    // 设置角色的菜单关系
+    role.menus = menus;
+    // 保存更新后的角色信息
+    return await this.roleRepository.save(role);
   }
 }

@@ -6,7 +6,8 @@ import {
   Delete,
   Body,
   Param,
-  Query, ParseIntPipe,
+  Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { MenuService } from '../../shared/service/menu.service';
 import { CreateMenuDto, UpdateMenuDto } from '../../shared/dto/menu.dto';
@@ -65,7 +66,7 @@ export class MenuController {
   }
 
   // 获取所有菜单的树结构
-  @Get('/all')
+  @Post('all')
   async getMenuTree() {
     return this.menuService.getMenuTree();
   }
