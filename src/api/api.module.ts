@@ -9,6 +9,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DictController } from './controller/dict.controller';
 import { PermissionController } from './controller/permission.controller';
 import { MenuController } from './controller/menu.controller';
+import { UploadController } from './controller/upload.controller';
 
 @Module({
   controllers: [
@@ -20,6 +21,7 @@ import { MenuController } from './controller/menu.controller';
     DictController,
     PermissionController,
     MenuController,
+    UploadController,
   ],
   imports: [
     JwtModule.registerAsync({

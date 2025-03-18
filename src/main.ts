@@ -10,6 +10,7 @@ import { RedisService } from './shared/service/redis.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
+import { join } from 'path';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 
 async function bootstrap() {
@@ -35,7 +36,7 @@ async function bootstrap() {
   const sessionSecret: string = configService.get('SESSION_SECRET') ?? ''; // 获取 SESSION_SECRET
   const sessionCookieMaxAge: number = Number(
     configService.get('SESSION_COOKIE_MAXAGE') ?? 1000 * 60 * 5,
-  ); // 获取 SESSION_COOKIE_MAXAGE
+  );
   app.use(
     session({
       secret: sessionSecret,
@@ -61,7 +62,13 @@ async function bootstrap() {
   app.use(json({ limit: '1.5mb' }));
   app.use(urlencoded({ extended: true, limit: '1.5mb' }));
 
-  await app.listen(3000);
+  // 配置静态文件访问
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/', // 访问文件的 URL 前缀
+  });
+
+  const port: number = Number(configService.get('PORT') || 3000);
+  await app.listen(port);
 }
 
 bootstrap();
