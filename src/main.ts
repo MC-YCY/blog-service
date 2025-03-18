@@ -33,13 +33,16 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService); // 获取 ConfigService
   const sessionSecret: string = configService.get('SESSION_SECRET') ?? ''; // 获取 SESSION_SECRET
+  const sessionCookieMaxAge: number = Number(
+    configService.get('SESSION_COOKIE_MAXAGE') ?? 1000 * 60 * 5,
+  ); // 获取 SESSION_COOKIE_MAXAGE
   app.use(
     session({
       secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
       cookie: {
-        maxAge: 1000 * 60 * 5, // 5分钟
+        maxAge: sessionCookieMaxAge, // 5分钟
       },
     }),
   );

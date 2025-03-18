@@ -26,10 +26,11 @@ import { MenuController } from './controller/menu.controller';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const jwtSecret = configService.get<string>('JWT_SECRET');
-        console.log('JWT_SECRET:', jwtSecret); // Log to check if it is loading correctly
         return {
           secret: jwtSecret || 'fallback-secret', // Use fallback if undefined
-          signOptions: { expiresIn: '1h' },
+          signOptions: {
+            expiresIn: configService.get<string>('JWT_EXPIRES_IN'),
+          },
         };
       },
       inject: [ConfigService],
