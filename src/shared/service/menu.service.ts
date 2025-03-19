@@ -252,4 +252,68 @@ export class MenuService {
     // 保存更新后的角色信息
     return await this.roleRepository.save(role);
   }
+
+  // 根据用户 id 获取菜单树，过滤掉 type 为 'button' 的菜单，只保留 type 为 'menu'
+  async getMenusByUserId(userId: number): Promise<Menu[]> {
+    // 查询用户及其角色
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['role'],
+    });
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    // 根据角色获取允许的菜单 id 列表
+    const allowedMenuIds = await this.getMenuIdsByUserId(user.role.id);
+    // 获取完整菜单树
+    const trees = await this.menuRepository.findTrees();
+    // 递归过滤树结构，只保留 type 为 'menu' 并且在 allowedMenuIds 内的菜单
+    const filterTree = (menus: Menu[]): Menu[] => {
+      return menus
+        .filter(
+          (menu: Menu) =>
+            menu.type === 'menu' && allowedMenuIds.includes(menu.id),
+        )
+        .map((menu: Menu) => {
+          if (menu.children && menu.children.length > 0) {
+            // 递归过滤子菜单
+            const filteredChildren = filterTree(menu.children);
+            // 如果没有子菜单，置为 null
+            menu.children = filteredChildren.length ? filteredChildren : null;
+          }
+          return menu;
+        });
+    };
+    return filterTree(trees);
+  }
+
+  // 根据用户 id 获取其允许的所有 button 菜单（树形结构拉平）
+  async getButtonMenusFlatByUserId(userId: number): Promise<Menu[]> {
+    // 查询用户及其角色信息
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['role'],
+    });
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    // 根据角色获取允许的菜单 id 列表
+    const allowedMenuIds = await this.getMenuIdsByUserId(user.role.id);
+    // 获取完整菜单树
+    const trees = await this.menuRepository.findTrees();
+    const flatButtons: Menu[] = [];
+    // 递归遍历树结构，将 type 为 'button' 且在允许菜单 id 列表内的菜单收集到 flatButtons 数组中
+    const traverse = (menus: Menu[]): void => {
+      menus.forEach((menu) => {
+        if (menu.type === 'button' && allowedMenuIds.includes(menu.id)) {
+          flatButtons.push(menu);
+        }
+        if (menu.children && menu.children.length > 0) {
+          traverse(menu.children);
+        }
+      });
+    };
+    traverse(trees);
+    return flatButtons;
+  }
 }

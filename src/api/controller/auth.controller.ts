@@ -175,42 +175,4 @@ export class AuthController {
 
     await this.redisService.del(`captcha:${captchaId}`);
   }
-
-  @Get('permissions')
-  getPermissions(@Req() request: Request) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
-    const token = request.headers['authorization']?.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('未提供 token');
-    }
-
-    let decoded: { account: string } | null = null;
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      decoded = this.jwtService.verify(token) as { account: string };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_err) {
-      throw new UnauthorizedException('无效的 token');
-    }
-
-    if (!decoded || !decoded.account) {
-      throw new UnauthorizedException('无效的 token 数据');
-    }
-
-    if (decoded.account === 'yin2646403766') {
-      return {
-        btnList: [
-          {
-            label: '新增文章',
-            value: 'add-article',
-          },
-        ],
-      };
-    }
-
-    return {
-      btnList: [],
-    };
-  }
 }

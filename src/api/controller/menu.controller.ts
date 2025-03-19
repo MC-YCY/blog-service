@@ -8,14 +8,20 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { MenuService } from '../../shared/service/menu.service';
 import { CreateMenuDto, UpdateMenuDto } from '../../shared/dto/menu.dto';
 import { Menu } from '../../shared/entities/menu.entity';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('menu')
 export class MenuController {
-  constructor(private readonly menuService: MenuService) {}
+  constructor(
+    private readonly menuService: MenuService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   // 创建菜单
   @Post()
@@ -69,5 +75,38 @@ export class MenuController {
   @Post('all')
   async getMenuTree() {
     return this.menuService.getMenuTree();
+  }
+
+  getTokenUserInfo(request: Request) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const authHeader: string = request.headers['authorization'];
+    const token = authHeader ? authHeader.split(' ')[1] : null;
+    if (!token) {
+      throw new UnauthorizedException('未提供 token');
+    }
+
+    let decoded: { account: string; userId: number };
+    try {
+      decoded = this.jwtService.verify(token);
+    } catch {
+      throw new UnauthorizedException('无效的 token');
+    }
+
+    if (!decoded || !decoded.account) {
+      throw new UnauthorizedException('无效的 token 数据');
+    }
+    return decoded;
+  }
+
+  @Get('user/menus')
+  async getUserMenus(@Req() request: Request) {
+    const decoded = this.getTokenUserInfo(request);
+    return await this.menuService.getMenusByUserId(decoded.userId);
+  }
+
+  @Get('user/buttons')
+  async getUserButtons(@Req() request: Request) {
+    const decoded = this.getTokenUserInfo(request);
+    return await this.menuService.getButtonMenusFlatByUserId(decoded.userId);
   }
 }
