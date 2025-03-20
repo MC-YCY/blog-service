@@ -28,6 +28,9 @@ export class User {
   @Column()
   avatar: string;
 
+  @Column()
+  signature: string;
+
   @Column({ default: '' })
   changeLog: string;
 

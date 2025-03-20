@@ -85,6 +85,8 @@ export class AuthController {
     userVo.id = user.id;
     userVo.role = user.role;
     userVo.avatar = user.avatar;
+    userVo.username = user.username;
+    userVo.signature = user.signature;
 
     return {
       message: '登录成功',

@@ -11,6 +11,7 @@ import { User } from '../entities/user.entity';
 import { CreateUserDto, UpdateUserDto } from '../dto/user.dto';
 import * as bcrypt from 'bcryptjs';
 import { Role } from '../entities/role.entity';
+import { UserVo } from '../vo/user.vo';
 
 interface PostgreSQLError extends Error {
   code: string;
@@ -142,11 +143,22 @@ export class UserService {
     return { records, total };
   }
 
-  async findOne(id: number): Promise<User | null> {
-    return await this.userRepository.findOne({
+  async findOne(id: number): Promise<UserVo | null> {
+    const result = await this.userRepository.findOne({
       where: { id },
       relations: ['role'],
     });
+    if (!result) {
+      throw new BadRequestException('用户不存在');
+    }
+    const userVo = new UserVo();
+    userVo.signature = result.signature;
+    userVo.account = result.account;
+    userVo.username = result.username;
+    userVo.role = result.role;
+    userVo.avatar = result.avatar;
+    userVo.id = result.id;
+    return userVo;
   }
 
   async findByAccount(account: string): Promise<User | null> {
