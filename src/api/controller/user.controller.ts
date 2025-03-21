@@ -18,6 +18,7 @@ import { UserService } from '../../shared/service/user.service';
 import { ApiTags, ApiQuery, ApiResponse, ApiOperation } from '@nestjs/swagger';
 import { User } from '../../shared/entities/user.entity';
 import { UpdateRoleDto } from '../../shared/dto/role.dto';
+import { Public } from '../../shared/decorators/public.decorator';
 
 @ApiTags('用户管理')
 @Controller('users')
@@ -65,6 +66,7 @@ export class UserController {
     return this.userService.findAll(page, limit);
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: '根据 ID 获取用户详情' })
   @ApiResponse({ status: 200, description: '返回用户详情', type: User })

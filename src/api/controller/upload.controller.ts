@@ -24,7 +24,7 @@ export class UploadController {
         },
       }),
       limits: {
-        fileSize: 1024 * 1024, // 限制文件最大1MB
+        fileSize: 1024 * 1024, // 限制文件最大1MB,
       },
     }),
   )
