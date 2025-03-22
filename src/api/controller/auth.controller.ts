@@ -32,8 +32,51 @@ export class AuthController {
       createUserDto.captchaId,
       createUserDto.captchaCode,
     );
+    // 创建用户
     const user = await this.userService.create(createUserDto);
-    return { message: '注册成功', user };
+
+    // 生成 token
+    const accessToken = this.jwtService.sign(
+      { userId: user.id, account: user.account },
+      { expiresIn: '1h' },
+    );
+    const refreshToken = this.jwtService.sign(
+      { userId: user.id, account: user.account },
+      { expiresIn: '7d' },
+    );
+
+    // 存储 token 到 Redis
+    await this.redisService.set(
+      `access_token:${user.id}`,
+      accessToken,
+      60 * 60, // 1小时过期
+    );
+    await this.redisService.set(
+      `refresh_token:${user.id}`,
+      refreshToken,
+      7 * 24 * 60 * 60, // 7天过期
+    );
+    await this.redisService.set(
+      `token:${accessToken}:role`, // 以 Token 为键存储角色
+      user.role.code,
+      60 * 60,
+    );
+
+    // 构造用户返回对象
+    const userVo = new UserVo();
+    userVo.account = user.account;
+    userVo.id = user.id;
+    userVo.role = user.role;
+    userVo.avatar = user.avatar;
+    userVo.username = user.username;
+    userVo.signature = user.signature;
+
+    return {
+      message: '注册成功',
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: userVo,
+    };
   }
 
   @Public()

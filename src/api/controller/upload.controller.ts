@@ -9,9 +9,11 @@ import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
 import { getServerIp } from '../../shared/utils/server-ip';
+import { Public } from '../../shared/decorators/public.decorator';
 
 @Controller('upload')
 export class UploadController {
+  @Public()
   @Post('localhost')
   @UseInterceptors(
     FileInterceptor('file', {

@@ -25,20 +25,6 @@ import { Public } from '../../shared/decorators/public.decorator';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('register')
-  @ApiOperation({ summary: '用户注册' })
-  @ApiResponse({ status: 201, description: '用户创建成功', type: User })
-  register(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }
-
-  @Post('login')
-  @ApiOperation({ summary: '用户登录' })
-  @ApiResponse({ status: 200, description: '登录成功' })
-  login(@Body() loginUserDto: LoginUserDto) {
-    return { message: '登录成功', user: loginUserDto };
-  }
-
   @Get()
   @ApiOperation({ summary: '分页获取用户列表' })
   @ApiQuery({ name: 'pageNo', required: false, type: Number, example: 1 })
