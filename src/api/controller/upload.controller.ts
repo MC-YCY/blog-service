@@ -18,7 +18,7 @@ export class UploadController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads', // 本地存储目录
+        destination: './uploads/avatars/', // 本地存储目录
         filename: (req, file, callback) => {
           // 生成唯一文件名
           const fileExtension = extname(file.originalname);
@@ -37,6 +37,6 @@ export class UploadController {
 
     const ip = getServerIp();
     // 返回文件的相对路径
-    return { fileUrl: ip + `/uploads/${file.filename}` };
+    return { fileUrl: ip + `/uploads/avatars/${file.filename}` };
   }
 }

@@ -17,6 +17,8 @@ import { Dict } from './entities/dict.entity';
 import { DictService } from './service/dict.service';
 import { Menu } from './entities/menu.entity';
 import { MenuService } from './service/menu.service';
+import { Image } from './entities/image.entity';
+import { ImageService } from './service/image.service';
 
 @Global()
 @Module({
@@ -44,6 +46,7 @@ import { MenuService } from './service/menu.service';
       Permission,
       Dict,
       Menu,
+      Image,
     ]),
   ],
   exports: [
@@ -56,6 +59,7 @@ import { MenuService } from './service/menu.service';
     PermissionService,
     DictService,
     MenuService,
+    ImageService,
   ],
   providers: [
     RoleService,
@@ -67,6 +71,7 @@ import { MenuService } from './service/menu.service';
     PermissionService,
     DictService,
     MenuService,
+    ImageService,
   ],
 })
 export class SharedModule {}

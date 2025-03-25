@@ -253,4 +253,10 @@ export class UserService {
       this.handleDatabaseError(error);
     }
   }
+  async findOneById(id: number): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['role', 'images'], // 可选：加载关联数据
+    });
+  }
 }

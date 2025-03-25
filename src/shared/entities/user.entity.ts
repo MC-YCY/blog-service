@@ -10,6 +10,7 @@ import {
 import { Role } from './role.entity';
 import { Article } from './article.entity';
 import { Comment } from './comment.entity';
+import { Image } from './image.entity';
 
 @Entity()
 export class User {
@@ -50,4 +51,8 @@ export class User {
   // 用户的评论（一对多）
   @OneToMany(() => Comment, (comment) => comment.author)
   comments: Comment[];
+
+  // 在User类中添加
+  @OneToMany(() => Image, (image) => image.user)
+  images: Image[];
 }

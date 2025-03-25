@@ -10,6 +10,7 @@ import { DictController } from './controller/dict.controller';
 import { PermissionController } from './controller/permission.controller';
 import { MenuController } from './controller/menu.controller';
 import { UploadController } from './controller/upload.controller';
+import { ImageController } from './controller/image.controller';
 
 @Module({
   controllers: [
@@ -22,6 +23,7 @@ import { UploadController } from './controller/upload.controller';
     PermissionController,
     MenuController,
     UploadController,
+    ImageController,
   ],
   imports: [
     JwtModule.registerAsync({

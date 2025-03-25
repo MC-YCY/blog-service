@@ -66,6 +66,9 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/', // 访问文件的 URL 前缀
   });
+  app.useStaticAssets(join(__dirname, '..', 'uploads/images'), {
+    prefix: '/uploads/images/', // 访问文件的 URL 前缀
+  });
 
   const port: number = Number(configService.get('PORT') || 3000);
   await app.listen(port);
