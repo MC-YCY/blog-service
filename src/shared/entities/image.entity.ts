@@ -7,7 +7,11 @@ export class Image {
   id: number;
 
   // 文件原始名字
-  @Column()
+  @Column({
+    type: 'varchar',
+    charset: 'utf8mb4',
+    collation: 'utf8mb4_unicode_ci',
+  })
   originalname: string;
 
   // 文件原始类型

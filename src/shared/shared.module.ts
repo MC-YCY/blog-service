@@ -28,6 +28,7 @@ import { ImageService } from './service/image.service';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'mysql',
+        charset: 'utf8mb4',
         host: configService.get<string>('database.host'),
         port: configService.get<number>('database.port'),
         username: configService.get<string>('database.user'),
