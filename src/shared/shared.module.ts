@@ -19,6 +19,8 @@ import { Menu } from './entities/menu.entity';
 import { MenuService } from './service/menu.service';
 import { Image } from './entities/image.entity';
 import { ImageService } from './service/image.service';
+import { Favorite } from './entities/favorite.entity';
+import { NotificationsGateway } from './gateway/notifications.gateway';
 
 @Global()
 @Module({
@@ -48,6 +50,7 @@ import { ImageService } from './service/image.service';
       Dict,
       Menu,
       Image,
+      Favorite,
     ]),
   ],
   exports: [
@@ -61,6 +64,7 @@ import { ImageService } from './service/image.service';
     DictService,
     MenuService,
     ImageService,
+    NotificationsGateway,
   ],
   providers: [
     RoleService,
@@ -73,6 +77,7 @@ import { ImageService } from './service/image.service';
     DictService,
     MenuService,
     ImageService,
+    NotificationsGateway,
   ],
 })
 export class SharedModule {}

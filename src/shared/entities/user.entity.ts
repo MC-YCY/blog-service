@@ -11,6 +11,7 @@ import { Role } from './role.entity';
 import { Article } from './article.entity';
 import { Comment } from './comment.entity';
 import { Image } from './image.entity';
+import { Favorite } from './favorite.entity';
 
 @Entity()
 export class User {
@@ -55,4 +56,7 @@ export class User {
   // 在User类中添加
   @OneToMany(() => Image, (image) => image.user)
   images: Image[];
+
+  @OneToMany(() => Favorite, (favorite) => favorite.user)
+  favorites: Favorite[]; // 用户的所有收藏记录
 }

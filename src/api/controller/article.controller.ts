@@ -1,50 +1,66 @@
 import {
   Controller,
   Post,
-  Get,
-  Patch,
-  Delete,
   Body,
   Param,
+  Get,
+  Query,
+  Put,
+  Delete,
 } from '@nestjs/common';
 import { ArticleService } from '../../shared/service/article.service';
 import {
   CreateArticleDto,
-  LikeArticleDto,
+  PaginateArticleDto,
   UpdateArticleDto,
 } from '../../shared/dto/article.dto';
-
-@Controller('articles')
+import { Article } from '../../shared/entities/article.entity';
+@Controller('users')
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
-  @Post()
-  create(@Body() createArticleDto: CreateArticleDto) {
-    return this.articleService.create(createArticleDto);
+  // 创建文章
+  @Post(':userId/articles')
+  async createArticle(
+    @Param('userId') userId: number,
+    @Body() createArticleDto: CreateArticleDto,
+  ): Promise<Article> {
+    return this.articleService.create(+userId, createArticleDto);
   }
 
-  @Get()
-  findAll() {
-    return this.articleService.findAll();
+  // 根据用户分页查询文章
+  @Get(':userId/articles')
+  async paginateArticles(
+    @Param('userId') userId: number,
+    @Query() query: PaginateArticleDto,
+  ) {
+    return this.articleService.paginateByUser(+userId, query);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.articleService.findOne(id);
+  // 更新文章，文章 id 通过 query 参数传递
+  @Put(':userId/articles')
+  async updateArticle(
+    @Param('userId') userId: number,
+    @Body() updateArticleDto: UpdateArticleDto,
+  ): Promise<Article> {
+    return this.articleService.update(
+      +userId,
+      updateArticleDto.articleId,
+      updateArticleDto,
+    );
   }
 
-  @Patch(':id')
-  update(@Param('id') id: number, @Body() updateArticleDto: UpdateArticleDto) {
-    return this.articleService.update(id, updateArticleDto);
+  // 删除文章，文章 id 通过 query 参数传递
+  @Delete(':userId/articles')
+  async deleteArticle(
+    @Param('userId') userId: number,
+    @Query('articleId') articleId: number,
+  ): Promise<void> {
+    return this.articleService.delete(+userId, +articleId);
   }
 
-  @Post('like')
-  likeArticle(@Body() likeArticleDto: LikeArticleDto) {
-    return this.articleService.likeArticle(likeArticleDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.articleService.remove(id);
+  @Get('all/articles')
+  async getAll(@Query() query: PaginateArticleDto) {
+    return this.articleService.searchApprovedByTitle(query);
   }
 }
