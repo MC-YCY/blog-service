@@ -5,7 +5,6 @@ import {
   Get,
   UnauthorizedException,
   BadRequestException,
-  Req,
 } from '@nestjs/common';
 import { UserService } from '../../shared/service/user.service';
 import { LoginUserDto, CreateUserDto } from '../../shared/dto/user.dto';

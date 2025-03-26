@@ -31,7 +31,7 @@ export class ArticleService {
     if (!user) throw new NotFoundException('用户不存在');
 
     // 设置默认状态
-    const status = createDto.status || ArticleStatus.DRAFT;
+    const status = createDto.status || ArticleStatus.PUBLISHED;
 
     const article = this.articleRepo.create({
       ...createDto,
@@ -75,10 +75,7 @@ export class ArticleService {
   }
 
   // 查询所有审核通过的文章，并支持根据标题模糊查询
-  async searchApprovedByTitle(query: PaginateArticleDto) {
-    const { title } = query;
-    const { page = 1, limit = 10 } = query;
-
+  async searchApprovedByTitle(page: number, limit: number, title: string) {
     const options: FindManyOptions<Article> = {
       where: {
         title: Like(`%${title}%`),
