@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserService } from './user.service';
 import { Image } from '../entities/image.entity';
 import { getServerIp } from '../utils/server-ip';
+import { unlink } from 'fs-extra';
 
 @Injectable()
 export class ImageService {
@@ -53,6 +58,8 @@ export class ImageService {
       });
     }
 
+    query.orderBy('image.uploadedAt', 'DESC');
+
     const [items, total] = await query
       .skip((options.page - 1) * options.limit)
       .take(options.limit)
@@ -65,5 +72,35 @@ export class ImageService {
       limit: options.limit,
       totalPages: Math.ceil(total / options.limit),
     };
+  }
+  /**
+   * 根据 image 的 id 删除记录并删除本地文件
+   * @param id 图片记录 id
+   * @param userId 当前用户 id，用于确保只能删除自己的图片
+   */
+  async deleteImageById(id: number, userId: number) {
+    // 查询图片记录，确保该图片属于当前用户
+    const image = await this.imageRepository.findOne({ where: { id, userId } });
+    if (!image) {
+      throw new NotFoundException('图片不存在');
+    }
+
+    // 获取服务器 ip，用于从 image.path 中剥离出本地文件路径
+    const ip = getServerIp();
+    // 假设 image.path 格式为 `${ip}/${file.path}`，从中提取本地文件路径
+    const localFilePath = image.path.replace(`${ip}/`, '');
+
+    // 删除本地文件
+    try {
+      await unlink(localFilePath);
+    } catch {
+      // 删除文件失败时，根据需求可以选择抛出异常或者记录日志
+      throw new InternalServerErrorException('删除本地文件失败');
+    }
+
+    // 删除数据库中的图片记录
+    await this.imageRepository.remove(image);
+
+    return { success: true };
   }
 }

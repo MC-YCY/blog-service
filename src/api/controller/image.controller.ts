@@ -7,6 +7,7 @@ import {
   Query,
   Param,
   ParseIntPipe,
+  Delete,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ImageService } from '../../shared/service/image.service';
@@ -55,5 +56,13 @@ export class ImageController {
       filename,
       userId: +userId,
     });
+  }
+
+  @Delete(':userId')
+  async deleteImage(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query('id', ParseIntPipe) id: number,
+  ) {
+    return await this.imageService.deleteImageById(id, userId);
   }
 }
