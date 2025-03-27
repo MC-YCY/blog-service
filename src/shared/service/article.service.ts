@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindManyOptions, Like } from 'typeorm';
+import { Repository, FindManyOptions, Like, Between } from 'typeorm';
 import { Article } from '../entities/article.entity';
 import { User } from '../entities/user.entity';
 import {
@@ -75,11 +75,12 @@ export class ArticleService {
   }
 
   // 查询所有审核通过的文章，并支持根据标题模糊查询
-  async searchApprovedByTitle(page: number, limit: number, title: string) {
+  async searchApprovedByTitle(page: number, limit: number, title: string, tag: string) {
     const options: FindManyOptions<Article> = {
       where: {
         title: Like(`%${title}%`),
         status: ArticleStatus.PUBLISHED, // 请确认枚举中审核通过状态的名称
+        tags: Like(`%${tag}%`),
       },
       relations: ['author'],
       order: { createdAt: 'DESC' },
@@ -120,6 +121,7 @@ export class ArticleService {
         [ArticleStatus.REJECTED]: [ArticleStatus.PENDING_REVIEW],
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
       if (!validTransitions[article.status]?.includes(updateDto.status)) {
         throw new ForbiddenException('不允许的状态变更');
       }
@@ -168,5 +170,58 @@ export class ArticleService {
 
     const [items, total] = await this.articleRepo.findAndCount(options);
     return { items, total };
+  }
+
+  async findOne(articleId: number): Promise<Article> {
+    const article = await this.articleRepo.findOne({
+      where: { id: articleId },
+      relations: ['author'],
+    });
+
+    if (!article) {
+      throw new NotFoundException('文章不存在');
+    }
+
+    return article;
+  }
+
+  async getLatestArticlesGroupedByDate(): Promise<
+    { date: string; posts: Article[] }[]
+  > {
+    // 获取最近5个有文章的日期（仅PUBLISHED状态）
+    const dateResults = await this.articleRepo
+      .createQueryBuilder('article')
+      .select('DATE(article.createdAt)', 'date')
+      .where('article.status = :status', {
+        status: ArticleStatus.PUBLISHED, // 添加状态过滤
+      })
+      .distinct(true)
+      .orderBy('date', 'DESC')
+      .limit(5)
+      .getRawMany();
+
+    const result: { date: string; posts: Article[] }[] = [];
+    for (const dateObj of dateResults) {
+      // 查询每个日期的前4篇已发布文章
+      const posts = await this.articleRepo
+        .createQueryBuilder('article')
+        .leftJoinAndSelect('article.author', 'author')
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
+        .where('DATE(article.createdAt) = :date', { date: dateObj.date })
+        .andWhere('article.status = :status', {
+          // 添加状态过滤
+          status: ArticleStatus.PUBLISHED,
+        })
+        .orderBy('article.createdAt', 'DESC')
+        .take(4)
+        .getMany();
+
+      result.push({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
+        date: dateObj.date, // 保持日期格式化
+        posts,
+      });
+    }
+    return result;
   }
 }

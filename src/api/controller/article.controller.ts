@@ -69,7 +69,22 @@ export class ArticleController {
     @Query('page', ParseIntPipe) page: number,
     @Query('limit', ParseIntPipe) limit: number,
     @Query('title') title: string,
+    @Query('tag') tag: string,
   ) {
-    return this.articleService.searchApprovedByTitle(page, limit, title);
+    return this.articleService.searchApprovedByTitle(page, limit, title, tag);
+  }
+
+  @Public()
+  @Get('item/:articleId')
+  async getArticle(
+    @Param('articleId', ParseIntPipe) articleId: number,
+  ): Promise<Article> {
+    return this.articleService.findOne(articleId);
+  }
+
+  @Public()
+  @Get('timeline')
+  async getTimelineArticles(): Promise<{ date: string; posts: Article[] }[]> {
+    return await this.articleService.getLatestArticlesGroupedByDate();
   }
 }
