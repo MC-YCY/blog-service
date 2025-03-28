@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindManyOptions, Like, Between } from 'typeorm';
+import { Repository, FindManyOptions, Like } from 'typeorm';
 import { Article } from '../entities/article.entity';
 import { User } from '../entities/user.entity';
 import {
@@ -75,7 +75,12 @@ export class ArticleService {
   }
 
   // 查询所有审核通过的文章，并支持根据标题模糊查询
-  async searchApprovedByTitle(page: number, limit: number, title: string, tag: string) {
+  async searchApprovedByTitle(
+    page: number,
+    limit: number,
+    title: string,
+    tag: string,
+  ) {
     const options: FindManyOptions<Article> = {
       where: {
         title: Like(`%${title}%`),
@@ -161,7 +166,7 @@ export class ArticleService {
     const { page = 1, limit = 10 } = query;
 
     const options: FindManyOptions<Article> = {
-      where: { author: { id: userId } },
+      where: { author: { id: userId }, tags: Like(`%${query.tag}%`) },
       relations: ['author'],
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
@@ -173,9 +178,18 @@ export class ArticleService {
   }
 
   async findOne(articleId: number): Promise<Article> {
+    // 原子操作增加浏览量
+    await this.articleRepo.increment({ id: articleId }, 'viewCount', 1);
+
+    // 查询并关联必要数据
     const article = await this.articleRepo.findOne({
       where: { id: articleId },
-      relations: ['author'],
+      relations: [
+        'author',
+        'likedBy', // 加载点赞用户关系
+        'comments', // 如果需要返回评论数可加载
+        'favorites', // 如果需要返回收藏数可加载
+      ],
     });
 
     if (!article) {

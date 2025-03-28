@@ -5,6 +5,8 @@ import {
   ManyToOne,
   ManyToMany,
   OneToMany,
+  AfterLoad,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Comment } from './comment.entity';
@@ -12,6 +14,7 @@ import { Favorite } from './favorite.entity';
 import { ArticleStatus } from '../enums/article-status.enum';
 
 @Entity()
+@Index(['id', 'viewCount'])
 export class Article {
   @PrimaryGeneratedColumn()
   id: number;
@@ -37,20 +40,25 @@ export class Article {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  // 文章作者（多对一）
+  @Column({
+    default: 0,
+    comment: '浏览计数',
+    type: 'int',
+    unsigned: true,
+  })
+  viewCount: number;
+
   @ManyToOne(() => User, (user) => user.articles)
   author: User;
 
-  // 文章点赞的用户（多对多）
   @ManyToMany(() => User, (user) => user.likedArticles)
   likedBy: User[];
 
-  // 文章的评论（一对多）
   @OneToMany(() => Comment, (comment) => comment.article)
   comments: Comment[];
 
   @OneToMany(() => Favorite, (favorite) => favorite.article)
-  favorites: Favorite[]; // 文章被收藏的所有记录
+  favorites: Favorite[];
 
   @Column({
     type: 'enum',
@@ -58,4 +66,13 @@ export class Article {
     default: ArticleStatus.DRAFT,
   })
   status: ArticleStatus;
+
+  // 虚拟字段
+  likeCount: number;
+
+  @AfterLoad()
+  calculateMetrics() {
+    this.likeCount = this.likedBy?.length || 0;
+    // 可以继续添加其他计算字段
+  }
 }
