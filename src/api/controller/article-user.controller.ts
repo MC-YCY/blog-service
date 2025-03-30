@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ArticleService } from '../../shared/service/article.service';
+import { Public } from '../../shared/decorators/public.decorator';
 
 @Controller('articles-user')
 export class ArticleUserController {
@@ -100,6 +101,7 @@ export class ArticleUserController {
     }
   }
 
+  @Public()
   @Post('stats-article')
   async getArticleStats(@Body('articleId', ParseIntPipe) id: number) {
     return this.articleService.getArticleStats(id);
