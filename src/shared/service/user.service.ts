@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { CreateUserDto, UpdateUserDto } from '../dto/user.dto';
+import { CreateUserDto, PaginationDto, UpdateUserDto } from '../dto/user.dto';
 import * as bcrypt from 'bcryptjs';
 import { Role } from '../entities/role.entity';
 import { UserVo } from '../vo/user.vo';
@@ -258,5 +258,30 @@ export class UserService {
       where: { id },
       relations: ['role', 'images'], // 可选：加载关联数据
     });
+  }
+
+  // 获取用户关注的用户列表，支持分页查询
+  async getFollowingUsers(userId: number, { page, limit }: PaginationDto) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['following'], // 加载 following 关联
+    });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    // 手动分页（注意：此方法在大数据量时性能较低）
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const paginatedFollowing = user.following.slice(start, end);
+
+    return {
+      records: paginatedFollowing,
+      total: user.following.length,
+      page,
+      limit,
+      totalPages: Math.ceil(user.following.length / limit),
+    };
   }
 }

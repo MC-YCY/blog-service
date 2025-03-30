@@ -92,3 +92,8 @@ export class UpdateUserDto {
   @IsInt()
   roleId?: number; // 新增角色ID字段
 }
+
+export class PaginationDto {
+  page: number;
+  limit: number;
+}

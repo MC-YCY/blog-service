@@ -13,7 +13,7 @@ import {
   UpdateArticleDto,
 } from '../dto/article.dto';
 import { ArticleStatus } from '../enums/article-status.enum';
-import { NotificationsGateway } from '../gateway/notifications.gateway';
+import { Favorite } from '../entities/favorite.entity';
 
 @Injectable()
 export class ArticleService {
@@ -22,7 +22,8 @@ export class ArticleService {
     private readonly articleRepo: Repository<Article>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    private readonly notificationsGateway: NotificationsGateway, // 注入 WebSocket 网关
+    @InjectRepository(Favorite)
+    private readonly favoriteRepo: Repository<Favorite>,
   ) {}
 
   // 创建文章
@@ -139,8 +140,7 @@ export class ArticleService {
 
     // 如果状态发生了变化，则通过 WebSocket 通知文章作者
     if (updateDto.status && updateDto.status !== oldStatus) {
-      const message = `您的文章 "${article.title}" 状态已更改为: ${updateDto.status}`;
-      this.notificationsGateway.notifyAuthor(article.author.id, message);
+      // const message = `您的文章 "${article.title}" 状态已更改为: ${updateDto.status}`;
     }
 
     return updatedArticle;
@@ -188,18 +188,19 @@ export class ArticleService {
     return { items, total };
   }
 
-  async findOne(articleId: number): Promise<Article> {
-    // 原子操作增加浏览量
+  async findOne(articleId: number): Promise<any> {
+    // 原子操作：增加浏览量
     await this.articleRepo.increment({ id: articleId }, 'viewCount', 1);
 
-    // 查询并关联必要数据
+    // 查询并加载关联数据，包括作者及其粉丝
     const article = await this.articleRepo.findOne({
       where: { id: articleId },
       relations: [
         'author',
-        'likedBy', // 加载点赞用户关系
-        'comments', // 如果需要返回评论数可加载
-        'favorites', // 如果需要返回收藏数可加载
+        'author.followers', // 加载作者粉丝
+        'likedBy', // 加载点赞的用户
+        'favorites', // 加载收藏记录
+        'comments', // 如果需要评论数
       ],
     });
 
@@ -207,7 +208,21 @@ export class ArticleService {
       throw new NotFoundException('文章不存在');
     }
 
-    return article;
+    // 计算额外的统计数据
+    article.likeCount = article.likedBy ? article.likedBy.length : 0;
+    const favoritesCount = article.favorites ? article.favorites.length : 0;
+    const authorFollowersCount =
+      article.author && article.author.followers
+        ? article.author.followers.length
+        : 0;
+
+    // 返回文章信息及统计数据
+    return {
+      ...article,
+      favoritesCount,
+      authorFollowersCount,
+      viewCount: article.viewCount, // 浏览量
+    };
   }
 
   async getLatestArticlesGroupedByDate(): Promise<
@@ -248,5 +263,188 @@ export class ArticleService {
       });
     }
     return result;
+  }
+
+  // 获取用户与文章的交互状态
+  async getArticleInteractionStatus(
+    userId: number,
+    articleId: number,
+  ): Promise<{
+    isFollowingAuthor: boolean;
+    isLiked: boolean;
+    isFavorited: boolean;
+  }> {
+    const article = await this.articleRepo.findOne({
+      where: { id: articleId },
+      relations: ['author'],
+    });
+
+    if (!article) {
+      throw new NotFoundException('文章不存在');
+    }
+
+    // 用户有效性验证
+    const userExists = await this.userRepo.exist({
+      where: { id: userId },
+    });
+    if (!userExists) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    // 是否关注作者
+    const isFollowingAuthor = await this.userRepo
+      .createQueryBuilder('user')
+      .innerJoin('user.following', 'following', 'following.id = :authorId', {
+        authorId: article.author.id,
+      })
+      .where('user.id = :userId', { userId })
+      .getCount()
+      .then((count) => count > 0);
+
+    // 是否喜欢文章
+    const isLiked = await this.userRepo
+      .createQueryBuilder('user')
+      .innerJoin('user.likedArticles', 'article', 'article.id = :articleId', {
+        articleId,
+      })
+      .where('user.id = :userId', { userId })
+      .getCount()
+      .then((count) => count > 0);
+
+    // 是否收藏
+    const isFavorited = await this.favoriteRepo
+      .createQueryBuilder('favorite')
+      .where('favorite.userId = :userId AND favorite.articleId = :articleId', {
+        userId,
+        articleId,
+      })
+      .getCount()
+      .then((count) => count > 0);
+
+    return { isFollowingAuthor, isLiked, isFavorited };
+  }
+
+  // 切换关注作者
+  async toggleFollowAuthor(
+    currentUserId: number,
+    authorId: number,
+  ): Promise<boolean> {
+    const currentUser = await this.userRepo.findOne({
+      where: { id: currentUserId },
+      relations: ['following'],
+    });
+    if (!currentUser) {
+      throw new ForbiddenException('无效的用户操作');
+    }
+    const isFollowing = currentUser.following.some((u) => u.id === authorId);
+    const author = await this.userRepo.findOneBy({ id: authorId });
+    if (!author) {
+      throw new NotFoundException('关注用户不存在');
+    }
+    if (isFollowing) {
+      currentUser.following = currentUser.following.filter(
+        (u) => u.id !== authorId,
+      );
+    } else {
+      currentUser.following.push(author);
+    }
+
+    await this.userRepo.save(currentUser);
+
+    // 触发关注通知
+    if (!isFollowing) {
+      // this.eventEmitter.emit('user.followed', {
+      //   followerId: currentUserId,
+      //   followingId: authorId,
+      // });
+    }
+
+    return !isFollowing;
+  }
+
+  // 切换喜欢文章
+  async toggleLikeArticle(userId: number, articleId: number): Promise<boolean> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['likedArticles'],
+    });
+    if (!user) {
+      throw new ForbiddenException('用户状态异常');
+    }
+    const article = await this.articleRepo.findOne({
+      where: { id: articleId },
+      relations: ['author'],
+    });
+    if (!article) {
+      throw new NotFoundException('文章不存在或已被删除');
+    }
+    const isLiked = user.likedArticles.some((a) => a.id === articleId);
+
+    if (isLiked) {
+      user.likedArticles = user.likedArticles.filter((a) => a.id !== articleId);
+    } else {
+      user.likedArticles.push(article);
+    }
+
+    await this.userRepo.save(user);
+
+    // 触发喜欢通知
+    if (!isLiked) {
+      // this.eventEmitter.emit('article.liked', {
+      //   userId,
+      //   articleId,
+      //   authorId: article.author.id,
+      // });
+    }
+
+    return !isLiked;
+  }
+
+  // 切换收藏文章
+  async toggleFavoriteArticle(
+    userId: number,
+    articleId: number,
+  ): Promise<boolean> {
+    const articleExists = await this.articleRepo.exist({
+      where: { id: articleId },
+    });
+    if (!articleExists) {
+      throw new NotFoundException('文章不存在');
+    }
+
+    const existing = await this.favoriteRepo.findOne({
+      where: { user: { id: userId }, article: { id: articleId } },
+      relations: ['article'],
+    });
+
+    if (existing) {
+      await this.favoriteRepo.remove(existing);
+      return false;
+    }
+
+    const newFavorite = this.favoriteRepo.create({
+      user: { id: userId },
+      article: { id: articleId },
+    });
+
+    await this.favoriteRepo.save(newFavorite);
+
+    // 获取完整文章信息用于通知
+    const article = await this.articleRepo.findOne({
+      where: { id: articleId },
+      relations: ['author'],
+    });
+    if (!article) {
+      throw new NotFoundException('文章不存在或已被删除');
+    }
+
+    // // 触发收藏通知
+    // this.eventEmitter.emit('article.favorited', {
+    //   userId,
+    //   articleId,
+    //   authorId: article.author.id,
+    // });
+
+    return true;
   }
 }
