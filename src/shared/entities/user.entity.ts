@@ -60,11 +60,13 @@ export class User {
   articles: Article[];
 
   // 用户点赞的文章（多对多）
-  @ManyToMany(() => Article, (article) => article.likedBy)
+  @ManyToMany(() => Article, (article) => article.likedBy, {
+    cascade: true, // ✅ 允许级联操作
+  })
   @JoinTable({
-    name: 'user_liked_articles', // 自定义连接表名称
-    joinColumn: { name: 'user_id' },
-    inverseJoinColumn: { name: 'article_id' },
+    name: 'user_liked_articles', // 明确中间表名
+    joinColumn: { name: 'user_id' }, // 当前实体的外键
+    inverseJoinColumn: { name: 'article_id' }, // 关联实体的外键
   })
   likedArticles: Article[];
 

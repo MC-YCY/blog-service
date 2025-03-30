@@ -7,6 +7,7 @@ import {
   Query,
   NotFoundException,
   ForbiddenException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ArticleService } from '../../shared/service/article.service';
 
@@ -97,5 +98,10 @@ export class ArticleUserController {
       }
       throw error;
     }
+  }
+
+  @Post('stats-article')
+  async getArticleStats(@Body('articleId', ParseIntPipe) id: number) {
+    return this.articleService.getArticleStats(id);
   }
 }

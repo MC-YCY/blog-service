@@ -11,7 +11,8 @@ import {
 } from '@nestjs/common';
 import {
   CreateUserDto,
-  LoginUserDto, PaginationDto,
+  LoginUserDto,
+  PaginationDto,
   UpdateUserDto,
 } from '../../shared/dto/user.dto';
 import { UserService } from '../../shared/service/user.service';
@@ -82,11 +83,30 @@ export class UserController {
     return this.userService.updateUserRole(id, dto.id);
   }
 
+  @Public()
   @Post('following/:id')
   async getFollowingUsers(
     @Param('id', ParseIntPipe) id: number,
     @Body() paginationDto: PaginationDto,
   ) {
     return this.userService.getFollowingUsers(id, paginationDto);
+  }
+
+  @Public()
+  @Post('liked/:id')
+  async getLikedArticles(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() paginationDto: PaginationDto,
+  ) {
+    return this.userService.getLikedArticles(id, paginationDto);
+  }
+
+  @Public()
+  @Post('favorite/:id')
+  async getFavoriteArticles(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() paginationDto: PaginationDto,
+  ) {
+    return this.userService.getFavoriteArticles(id, paginationDto);
   }
 }

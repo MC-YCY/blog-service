@@ -366,36 +366,30 @@ export class ArticleService {
   async toggleLikeArticle(userId: number, articleId: number): Promise<boolean> {
     const user = await this.userRepo.findOne({
       where: { id: userId },
-      relations: ['likedArticles'],
+      relations: ['likedArticles'], // ✅ 必须加载关联
     });
-    if (!user) {
-      throw new ForbiddenException('用户状态异常');
-    }
-    const article = await this.articleRepo.findOne({
-      where: { id: articleId },
-      relations: ['author'],
-    });
-    if (!article) {
-      throw new NotFoundException('文章不存在或已被删除');
-    }
-    const isLiked = user.likedArticles.some((a) => a.id === articleId);
+    if (!user) throw new ForbiddenException('用户状态异常');
+
+    const article = await this.articleRepo.findOneBy({ id: Number(articleId) });
+    if (!article) throw new NotFoundException('文章不存在');
+
+    const isLiked = user.likedArticles.some((a) => a.id === Number(articleId));
 
     if (isLiked) {
-      user.likedArticles = user.likedArticles.filter((a) => a.id !== articleId);
+      user.likedArticles = user.likedArticles.filter(
+        (a) => a.id !== Number(articleId),
+      );
     } else {
       user.likedArticles.push(article);
     }
 
+    // 强制保存并刷新关联
     await this.userRepo.save(user);
-
-    // 触发喜欢通知
-    if (!isLiked) {
-      // this.eventEmitter.emit('article.liked', {
-      //   userId,
-      //   articleId,
-      //   authorId: article.author.id,
-      // });
-    }
+    await this.userRepo
+      .createQueryBuilder()
+      .relation(User, 'likedArticles')
+      .of(user)
+      .loadMany(); // ✅ 强制重新加载关联数据
 
     return !isLiked;
   }
@@ -446,5 +440,35 @@ export class ArticleService {
     // });
 
     return true;
+  }
+
+  // 获取文章，收藏，点赞，浏览量，作者粉丝数量
+  async getArticleStats(articleId: number) {
+    // 1. 验证文章存在并获取作者信息
+    const article = await this.articleRepo.findOne({
+      where: { id: articleId },
+      relations: ['author', 'likedBy'],
+    });
+    if (!article) throw new NotFoundException('文章不存在');
+
+    // 2. 并行查询所有统计数据
+    const [authorFollowers, favoritesCount] = await Promise.all([
+      // 作者粉丝数
+      this.userRepo
+        .createQueryBuilder('user')
+        .innerJoin('user_following', 'uf', 'uf.follower_id = user.id')
+        .where('uf.following_id = :authorId', { authorId: article.author.id })
+        .getCount(),
+
+      // 收藏数
+      this.favoriteRepo.count({ where: { article: { id: articleId } } }),
+    ]);
+
+    return {
+      authorFollowers,
+      favoritesCount,
+      likesCount: article.likedBy?.length || 0, // 点赞数（从关联关系获取）
+      viewCount: article.viewCount || 0, // 浏览量
+    };
   }
 }

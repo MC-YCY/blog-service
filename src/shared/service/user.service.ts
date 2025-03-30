@@ -12,6 +12,8 @@ import { CreateUserDto, PaginationDto, UpdateUserDto } from '../dto/user.dto';
 import * as bcrypt from 'bcryptjs';
 import { Role } from '../entities/role.entity';
 import { UserVo } from '../vo/user.vo';
+import { Article } from '../entities/article.entity';
+import { Favorite } from '../entities/favorite.entity';
 
 interface PostgreSQLError extends Error {
   code: string;
@@ -28,6 +30,12 @@ export class UserService {
 
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+
+    @InjectRepository(Article)
+    private articleRepository: Repository<Article>,
+
+    @InjectRepository(Favorite)
+    private favoriteRepository: Repository<Favorite>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -282,6 +290,61 @@ export class UserService {
       page,
       limit,
       totalPages: Math.ceil(user.following.length / limit),
+    };
+  }
+
+  // 分页获取用户 喜欢的文章
+  async getLikedArticles(userId: number, { page, limit }: PaginationDto) {
+    // 验证用户存在性
+    const userExists = await this.userRepository.findOneBy({ id: userId });
+    if (!userExists) throw new NotFoundException('用户不存在');
+
+    // 构造分页查询
+    const [articles, total] = await this.articleRepository
+      .createQueryBuilder('article')
+      .innerJoin(
+        'user_liked_articles',
+        'ula',
+        'ula.article_id = article.id AND ula.user_id = :userId',
+        { userId },
+      )
+      .orderBy('article.createdAt', 'DESC') // 按文章创建时间倒序
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      records: articles,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // 分页获取用户 收藏的文章
+  async getFavoriteArticles(userId: number, { page, limit }: PaginationDto) {
+    const userExists = await this.userRepository.findOneBy({ id: userId });
+    if (!userExists) throw new NotFoundException('用户不存在');
+
+    const [favorites, total] = await this.favoriteRepository
+      .createQueryBuilder('favorite')
+      .leftJoinAndSelect('favorite.article', 'article') // 关联文章实体
+      .where('favorite.userId = :userId', { userId }) // ✅ 使用实体属性名 userId
+      .orderBy('favorite.createdAt', 'DESC') // ✅ 使用实体属性名 createdAt
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    // 提取文章数据
+    const articles = favorites.map((fav) => fav.article);
+
+    return {
+      records: articles,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 }
