@@ -118,4 +118,10 @@ export class UserController {
   ) {
     return this.userService.getFollowers(userId, paginationDto);
   }
+
+  @Public()
+  @Post('user-stats/:userId')
+  async getUserStats(@Param('userId', ParseIntPipe) userId: number) {
+    return this.userService.getUserStats(userId);
+  }
 }

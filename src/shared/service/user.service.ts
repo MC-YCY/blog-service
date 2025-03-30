@@ -346,6 +346,7 @@ export class UserService {
     };
   }
 
+  // 用户粉丝列表
   async getFollowers(userId: number, { page = 1, limit = 10 }: PaginationDto) {
     // 验证用户存在性
     const userExists = await this.userRepository.findOneBy({ id: userId });
@@ -372,6 +373,51 @@ export class UserService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * 获取用户及统计数据
+   * @param userId 用户ID
+   */
+  async getUserStats(userId: number) {
+    // 加载用户，同时载入粉丝和文章（文章里要级联载入点赞、收藏数据）
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: [
+        'followers', // 粉丝数组
+        'articles', // 用户发表的文章
+        'articles.likedBy', // 文章点赞数组（假设 Article 中有 likedBy 关联）
+        'articles.favorites', // 文章被收藏数组（假设 Article 中有 favorites 关联）
+      ],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // 计算粉丝数量
+    const followersCount = user.followers?.length || 0;
+
+    // 计算文章数量
+    const articlesCount = user.articles?.length || 0;
+
+    // 累加用户所有文章的点赞数和收藏数
+    let totalLikes = 0;
+    let totalFavorites = 0;
+    if (user.articles) {
+      for (const article of user.articles) {
+        totalLikes += article.likedBy ? article.likedBy.length : 0;
+        totalFavorites += article.favorites ? article.favorites.length : 0;
+      }
+    }
+
+    return {
+      user,
+      followersCount,
+      articlesCount,
+      totalLikes,
+      totalFavorites,
     };
   }
 }
