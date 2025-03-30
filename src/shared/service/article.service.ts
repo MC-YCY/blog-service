@@ -162,11 +162,22 @@ export class ArticleService {
   }
 
   // 根据用户分页查询文章
-  async paginateByUser(userId: number, query: PaginateArticleDto) {
+  async paginateByUser(
+    userId: number,
+    query: PaginateArticleDto,
+    isLoginUser: boolean = false,
+  ) {
     const { page = 1, limit = 10 } = query;
-
+    const where = {
+      author: { id: userId },
+      tags: Like(`%${query.tag}%`),
+    };
+    // 判断是否是登录用户请求，如果是返回所有状态文章不是则返回，已发布
+    if (!isLoginUser) {
+      where['status'] = ArticleStatus.PUBLISHED;
+    }
     const options: FindManyOptions<Article> = {
-      where: { author: { id: userId }, tags: Like(`%${query.tag}%`) },
+      where: where,
       relations: ['author'],
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,

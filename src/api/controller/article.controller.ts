@@ -8,6 +8,7 @@ import {
   Put,
   Delete,
   ParseIntPipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { ArticleService } from '../../shared/service/article.service';
 import {
@@ -37,8 +38,9 @@ export class ArticleController {
   async paginateArticles(
     @Param('userId') userId: number,
     @Query() query: PaginateArticleDto,
+    @Query('isLoginUser', ParseBoolPipe) isLoginUser: boolean,
   ) {
-    return this.articleService.paginateByUser(+userId, query);
+    return this.articleService.paginateByUser(+userId, query, isLoginUser);
   }
 
   // 更新文章，文章 id 通过 query 参数传递
