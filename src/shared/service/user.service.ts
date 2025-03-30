@@ -27,13 +27,10 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
-
     @InjectRepository(Article)
     private articleRepository: Repository<Article>,
-
     @InjectRepository(Favorite)
     private favoriteRepository: Repository<Favorite>,
   ) {}
@@ -261,6 +258,7 @@ export class UserService {
       this.handleDatabaseError(error);
     }
   }
+
   async findOneById(id: number): Promise<User | null> {
     return this.userRepository.findOne({
       where: { id },
@@ -341,6 +339,35 @@ export class UserService {
 
     return {
       records: articles,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getFollowers(userId: number, { page = 1, limit = 10 }: PaginationDto) {
+    // 验证用户存在性
+    const userExists = await this.userRepository.findOneBy({ id: userId });
+    if (!userExists) throw new NotFoundException('用户不存在');
+
+    // 构造分页查询
+    const [followers, total] = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.username', 'user.avatar', 'user.signature']) // 过滤敏感字段
+      .innerJoin(
+        'user_following',
+        'uf',
+        'uf.follower_id = user.id AND uf.following_id = :userId',
+        { userId },
+      )
+      .orderBy('user.id', 'DESC') // 按用户ID倒序
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      records: followers,
       total,
       page,
       limit,

@@ -109,4 +109,13 @@ export class UserController {
   ) {
     return this.userService.getFavoriteArticles(id, paginationDto);
   }
+
+  @Public()
+  @Post('followers/:userId')
+  async getFollowers(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() paginationDto: PaginationDto,
+  ) {
+    return this.userService.getFollowers(userId, paginationDto);
+  }
 }
