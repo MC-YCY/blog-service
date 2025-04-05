@@ -14,6 +14,7 @@ import {
 } from '../dto/article.dto';
 import { ArticleStatus } from '../enums/article-status.enum';
 import { Favorite } from '../entities/favorite.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ArticleService {
@@ -24,6 +25,7 @@ export class ArticleService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Favorite)
     private readonly favoriteRepo: Repository<Favorite>,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   // 创建文章
@@ -352,13 +354,11 @@ export class ArticleService {
     await this.userRepo.save(currentUser);
 
     // 触发关注通知
-    if (!isFollowing) {
-      // this.eventEmitter.emit('user.followed', {
-      //   followerId: currentUserId,
-      //   followingId: authorId,
-      // });
-    }
-
+    this.eventEmitter.emit('notification.follow', {
+      senderId: currentUserId,
+      receiverId: authorId,
+      isStart: !isFollowing,
+    });
     return !isFollowing;
   }
 
@@ -370,7 +370,10 @@ export class ArticleService {
     });
     if (!user) throw new ForbiddenException('用户状态异常');
 
-    const article = await this.articleRepo.findOneBy({ id: Number(articleId) });
+    const article = await this.articleRepo.findOne({
+      where: { id: articleId },
+      relations: ['author'],
+    });
     if (!article) throw new NotFoundException('文章不存在');
 
     const isLiked = user.likedArticles.some((a) => a.id === Number(articleId));
@@ -390,7 +393,12 @@ export class ArticleService {
       .relation(User, 'likedArticles')
       .of(user)
       .loadMany(); // ✅ 强制重新加载关联数据
-
+    this.eventEmitter.emit('notification.like', {
+      senderId: userId,
+      receiverId: article.author.id,
+      isStart: !isLiked,
+      articleId,
+    });
     return !isLiked;
   }
 
@@ -408,11 +416,18 @@ export class ArticleService {
 
     const existing = await this.favoriteRepo.findOne({
       where: { user: { id: userId }, article: { id: articleId } },
-      relations: ['article'],
+      relations: ['article', 'article.author'],
     });
 
     if (existing) {
       await this.favoriteRepo.remove(existing);
+      // 触发收藏通知
+      this.eventEmitter.emit('notification.favorite', {
+        senderId: userId,
+        receiverId: existing.article.author.id,
+        articleId,
+        isStart: false,
+      });
       return false;
     }
 
@@ -432,12 +447,13 @@ export class ArticleService {
       throw new NotFoundException('文章不存在或已被删除');
     }
 
-    // // 触发收藏通知
-    // this.eventEmitter.emit('article.favorited', {
-    //   userId,
-    //   articleId,
-    //   authorId: article.author.id,
-    // });
+    // 触发收藏通知
+    this.eventEmitter.emit('notification.favorite', {
+      senderId: userId,
+      receiverId: article.author.id,
+      articleId,
+      isStart: true,
+    });
 
     return true;
   }

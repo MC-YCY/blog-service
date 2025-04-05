@@ -20,6 +20,11 @@ import { MenuService } from './service/menu.service';
 import { Image } from './entities/image.entity';
 import { ImageService } from './service/image.service';
 import { Favorite } from './entities/favorite.entity';
+import { Notification } from '../notification/notification.entity';
+import { NotificationService } from '../notification/notification.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationGateway } from '../notification/notification.gateway';
+import { NotificationListener } from '../notification/notification.listener';
 
 @Global()
 @Module({
@@ -40,6 +45,7 @@ import { Favorite } from './entities/favorite.entity';
         synchronize: process.env.NODE_ENV !== 'production', // 生产环境不要自动同步数据库
       }),
     }),
+    EventEmitterModule.forRoot(),
     TypeOrmModule.forFeature([
       User,
       Role,
@@ -50,6 +56,7 @@ import { Favorite } from './entities/favorite.entity';
       Menu,
       Image,
       Favorite,
+      Notification,
     ]),
   ],
   exports: [
@@ -63,6 +70,9 @@ import { Favorite } from './entities/favorite.entity';
     DictService,
     MenuService,
     ImageService,
+    NotificationService,
+    NotificationListener,
+    NotificationGateway,
   ],
   providers: [
     RoleService,
@@ -75,6 +85,9 @@ import { Favorite } from './entities/favorite.entity';
     DictService,
     MenuService,
     ImageService,
+    NotificationService,
+    NotificationListener,
+    NotificationGateway,
   ],
 })
 export class SharedModule {}
