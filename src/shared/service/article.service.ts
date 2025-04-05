@@ -353,6 +353,7 @@ export class ArticleService {
 
     await this.userRepo.save(currentUser);
 
+    if (currentUserId === authorId) return !isFollowing;
     // 触发关注通知
     this.eventEmitter.emit('notification.follow', {
       senderId: currentUserId,
@@ -393,6 +394,8 @@ export class ArticleService {
       .relation(User, 'likedArticles')
       .of(user)
       .loadMany(); // ✅ 强制重新加载关联数据
+
+    if (userId === articleId) return !isLiked;
     this.eventEmitter.emit('notification.like', {
       senderId: userId,
       receiverId: article.author.id,
@@ -421,6 +424,7 @@ export class ArticleService {
 
     if (existing) {
       await this.favoriteRepo.remove(existing);
+      if (userId === existing.article.author.id) return false;
       // 触发收藏通知
       this.eventEmitter.emit('notification.favorite', {
         senderId: userId,
@@ -447,6 +451,7 @@ export class ArticleService {
       throw new NotFoundException('文章不存在或已被删除');
     }
 
+    if (userId === article.author.id) return true;
     // 触发收藏通知
     this.eventEmitter.emit('notification.favorite', {
       senderId: userId,

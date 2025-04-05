@@ -14,6 +14,7 @@ import { UnauthorizedException } from '@nestjs/common';
   cors: {
     origin: '*',
   },
+  path: '/ws',
 })
 export class NotificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
