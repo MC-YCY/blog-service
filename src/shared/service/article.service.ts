@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindManyOptions, Like } from 'typeorm';
+import { Repository, FindManyOptions, Like, ILike } from 'typeorm';
 import { Article } from '../entities/article.entity';
 import { User } from '../entities/user.entity';
 import {
@@ -86,7 +86,7 @@ export class ArticleService {
   ) {
     const options: FindManyOptions<Article> = {
       where: {
-        title: Like(`%${title}%`),
+        title: ILike(`%${title}%`),
         status: ArticleStatus.PUBLISHED, // 请确认枚举中审核通过状态的名称
         tags: Like(`%${tag}%`),
       },
