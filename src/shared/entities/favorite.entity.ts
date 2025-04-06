@@ -17,8 +17,10 @@ export class Favorite {
   @ManyToOne(() => User, (user) => user.favorites)
   user: User;
 
-  @ManyToOne(() => Article, (article) => article.favorites)
-  article: Article;
+  @ManyToOne(() => Article, (article) => article.favorites, {
+    onDelete: 'CASCADE', // 确保这里配置正确
+  })
+  article: Article; // 这里不配置任何级联选项
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date; // 收藏时间

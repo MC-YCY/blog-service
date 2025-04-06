@@ -15,6 +15,7 @@ import {
 import { ArticleStatus } from '../enums/article-status.enum';
 import { Favorite } from '../entities/favorite.entity';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Notification } from '../../notification/notification.entity';
 
 @Injectable()
 export class ArticleService {
@@ -26,6 +27,8 @@ export class ArticleService {
     @InjectRepository(Favorite)
     private readonly favoriteRepo: Repository<Favorite>,
     private eventEmitter: EventEmitter2,
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
   ) {}
 
   // 创建文章
@@ -150,9 +153,10 @@ export class ArticleService {
 
   // 删除文章
   async delete(userId: number, articleId: number): Promise<void> {
+    // 先验证权限
     const article = await this.articleRepo.findOne({
       where: { id: articleId },
-      relations: ['author'],
+      relations: ['favorites', 'likedBy', 'comments', 'author'],
     });
 
     if (!article) throw new NotFoundException('文章不存在');
@@ -160,7 +164,14 @@ export class ArticleService {
       throw new ForbiddenException('无权删除此文章');
     }
 
-    await this.articleRepo.remove(article);
+    // 先删除所有关联的通知记录
+    await this.notificationRepo.delete({ article: { id: articleId } });
+    // 然后删除文章，依赖其他配置（如 onDelete: 'CASCADE'）处理其他级联关系
+    await this.articleRepo.delete(articleId);
+    //删除后，更新消息数量
+    this.eventEmitter.emit('notification.update', {
+      userId: userId,
+    });
   }
 
   // 根据用户分页查询文章
@@ -353,7 +364,6 @@ export class ArticleService {
 
     await this.userRepo.save(currentUser);
 
-    if (currentUserId === authorId) return !isFollowing;
     // 触发关注通知
     this.eventEmitter.emit('notification.follow', {
       senderId: currentUserId,
@@ -395,7 +405,6 @@ export class ArticleService {
       .of(user)
       .loadMany(); // ✅ 强制重新加载关联数据
 
-    if (userId === articleId) return !isLiked;
     this.eventEmitter.emit('notification.like', {
       senderId: userId,
       receiverId: article.author.id,
@@ -424,7 +433,6 @@ export class ArticleService {
 
     if (existing) {
       await this.favoriteRepo.remove(existing);
-      if (userId === existing.article.author.id) return false;
       // 触发收藏通知
       this.eventEmitter.emit('notification.favorite', {
         senderId: userId,
@@ -451,7 +459,6 @@ export class ArticleService {
       throw new NotFoundException('文章不存在或已被删除');
     }
 
-    if (userId === article.author.id) return true;
     // 触发收藏通知
     this.eventEmitter.emit('notification.favorite', {
       senderId: userId,

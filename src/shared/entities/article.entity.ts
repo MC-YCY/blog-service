@@ -51,13 +51,20 @@ export class Article {
   @ManyToOne(() => User, (user) => user.articles)
   author: User;
 
-  @ManyToMany(() => User, (user) => user.likedArticles)
+  @ManyToMany(() => User, (user) => user.likedArticles, {
+    onDelete: 'CASCADE',
+  })
   likedBy: User[];
 
-  @OneToMany(() => Comment, (comment) => comment.article)
+  @OneToMany(() => Comment, (comment) => comment.article, {
+    onDelete: 'CASCADE',
+  })
   comments: Comment[];
 
-  @OneToMany(() => Favorite, (favorite) => favorite.article)
+  @OneToMany(() => Favorite, (favorite) => favorite.article, {
+    onDelete: 'CASCADE', // 数据库级联删除
+    cascade: ['insert', 'update', 'remove'], // 允许通过ORM级联操作
+  })
   favorites: Favorite[];
 
   @Column({
