@@ -386,6 +386,7 @@ export class UserService {
       where: { id: userId },
       relations: [
         'followers', // 粉丝数组
+        'following', //关注数组
         'articles', // 用户发表的文章
         'articles.likedBy', // 文章点赞数组（假设 Article 中有 likedBy 关联）
         'articles.favorites', // 文章被收藏数组（假设 Article 中有 favorites 关联）
@@ -398,6 +399,9 @@ export class UserService {
 
     // 计算粉丝数量
     const followersCount = user.followers?.length || 0;
+
+    // 计算关注数量
+    const followingCount = user.following?.length || 0;
 
     // 计算文章数量
     const articlesCount = user.articles?.length || 0;
@@ -415,9 +419,29 @@ export class UserService {
     return {
       user,
       followersCount,
+      followingCount,
       articlesCount,
       totalLikes,
       totalFavorites,
     };
+  }
+
+  /**
+   * 检查关注状态（带缓存优化）
+   * @param currentUserId 当前用户ID
+   * @param targetUserId 目标用户ID
+   */
+  async isFollowing(
+    currentUserId: number,
+    targetUserId: number,
+  ): Promise<boolean> {
+    const result = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoin('user.following', 'following')
+      .where('user.id = :currentUserId', { currentUserId })
+      .andWhere('following.id = :targetUserId', { targetUserId })
+      .getCount();
+
+    return result > 0;
   }
 }
