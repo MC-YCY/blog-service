@@ -38,7 +38,9 @@ export class PermissionController {
   @ApiCreatedResponse({ type: Permission, description: '权限创建成功' })
   @ApiConflictResponse({ description: '权限标识符(code)已存在' })
   @ApiBadRequestResponse({ description: '无效的请求参数' })
-  async create(@Body() createDto: CreatePermissionDto): Promise<Permission | null> {
+  async create(
+    @Body() createDto: CreatePermissionDto,
+  ): Promise<Permission | null> {
     return this.permissionService.create(createDto);
   }
 
