@@ -10,8 +10,6 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import {
-  CreateUserDto,
-  LoginUserDto,
   PaginationDto,
   UpdateUserDto,
 } from '../../shared/dto/user.dto';
@@ -123,5 +121,14 @@ export class UserController {
   @Post('user-stats/:userId')
   async getUserStats(@Param('userId', ParseIntPipe) userId: number) {
     return this.userService.getUserStats(userId);
+  }
+
+  @Public()
+  @Post('/is-follower')
+  async isFollower(
+    @Body('userId', ParseIntPipe) userId: number,
+    @Body('targetUserId', ParseIntPipe) targetUserId: number,
+  ) {
+    return await this.userService.isFollowing(userId, targetUserId);
   }
 }

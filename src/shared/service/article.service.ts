@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindManyOptions, Like } from 'typeorm';
+import { Repository, FindManyOptions, Like, ILike } from 'typeorm';
 import { Article } from '../entities/article.entity';
 import { User } from '../entities/user.entity';
 import {
@@ -14,6 +14,8 @@ import {
 } from '../dto/article.dto';
 import { ArticleStatus } from '../enums/article-status.enum';
 import { Favorite } from '../entities/favorite.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Notification } from '../../notification/notification.entity';
 
 @Injectable()
 export class ArticleService {
@@ -24,6 +26,9 @@ export class ArticleService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Favorite)
     private readonly favoriteRepo: Repository<Favorite>,
+    private eventEmitter: EventEmitter2,
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
   ) {}
 
   // 创建文章
@@ -84,7 +89,7 @@ export class ArticleService {
   ) {
     const options: FindManyOptions<Article> = {
       where: {
-        title: Like(`%${title}%`),
+        title: ILike(`%${title}%`),
         status: ArticleStatus.PUBLISHED, // 请确认枚举中审核通过状态的名称
         tags: Like(`%${tag}%`),
       },
@@ -148,9 +153,10 @@ export class ArticleService {
 
   // 删除文章
   async delete(userId: number, articleId: number): Promise<void> {
+    // 先验证权限
     const article = await this.articleRepo.findOne({
       where: { id: articleId },
-      relations: ['author'],
+      relations: ['favorites', 'likedBy', 'comments', 'author'],
     });
 
     if (!article) throw new NotFoundException('文章不存在');
@@ -158,7 +164,14 @@ export class ArticleService {
       throw new ForbiddenException('无权删除此文章');
     }
 
-    await this.articleRepo.remove(article);
+    // 先删除所有关联的通知记录
+    await this.notificationRepo.delete({ article: { id: articleId } });
+    // 然后删除文章，依赖其他配置（如 onDelete: 'CASCADE'）处理其他级联关系
+    await this.articleRepo.delete(articleId);
+    //删除后，更新消息数量
+    this.eventEmitter.emit('notification.update', {
+      userId: userId,
+    });
   }
 
   // 根据用户分页查询文章
@@ -352,13 +365,11 @@ export class ArticleService {
     await this.userRepo.save(currentUser);
 
     // 触发关注通知
-    if (!isFollowing) {
-      // this.eventEmitter.emit('user.followed', {
-      //   followerId: currentUserId,
-      //   followingId: authorId,
-      // });
-    }
-
+    this.eventEmitter.emit('notification.follow', {
+      senderId: currentUserId,
+      receiverId: authorId,
+      isStart: !isFollowing,
+    });
     return !isFollowing;
   }
 
@@ -370,7 +381,10 @@ export class ArticleService {
     });
     if (!user) throw new ForbiddenException('用户状态异常');
 
-    const article = await this.articleRepo.findOneBy({ id: Number(articleId) });
+    const article = await this.articleRepo.findOne({
+      where: { id: articleId },
+      relations: ['author'],
+    });
     if (!article) throw new NotFoundException('文章不存在');
 
     const isLiked = user.likedArticles.some((a) => a.id === Number(articleId));
@@ -391,6 +405,12 @@ export class ArticleService {
       .of(user)
       .loadMany(); // ✅ 强制重新加载关联数据
 
+    this.eventEmitter.emit('notification.like', {
+      senderId: userId,
+      receiverId: article.author.id,
+      isStart: !isLiked,
+      articleId,
+    });
     return !isLiked;
   }
 
@@ -408,11 +428,18 @@ export class ArticleService {
 
     const existing = await this.favoriteRepo.findOne({
       where: { user: { id: userId }, article: { id: articleId } },
-      relations: ['article'],
+      relations: ['article', 'article.author'],
     });
 
     if (existing) {
       await this.favoriteRepo.remove(existing);
+      // 触发收藏通知
+      this.eventEmitter.emit('notification.favorite', {
+        senderId: userId,
+        receiverId: existing.article.author.id,
+        articleId,
+        isStart: false,
+      });
       return false;
     }
 
@@ -432,12 +459,13 @@ export class ArticleService {
       throw new NotFoundException('文章不存在或已被删除');
     }
 
-    // // 触发收藏通知
-    // this.eventEmitter.emit('article.favorited', {
-    //   userId,
-    //   articleId,
-    //   authorId: article.author.id,
-    // });
+    // 触发收藏通知
+    this.eventEmitter.emit('notification.favorite', {
+      senderId: userId,
+      receiverId: article.author.id,
+      articleId,
+      isStart: true,
+    });
 
     return true;
   }

@@ -81,7 +81,7 @@ export class ArticleController {
   async getArticle(
     @Param('articleId', ParseIntPipe) articleId: number,
   ): Promise<Article> {
-    return this.articleService.findOne(articleId);
+    return await this.articleService.findOne(articleId);
   }
 
   @Public()
