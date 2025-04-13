@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Comment } from '../entities/comment.entity';
@@ -19,38 +19,43 @@ export class CommentService {
     private articleRepository: Repository<Article>,
   ) {}
 
-  async create(createCommentDto: CreateCommentDto): Promise<Comment> {
-    const { authorId, articleId, content } = createCommentDto;
-
-    const author = await this.userRepository.findOne({
-      where: { id: authorId },
-    });
+  // 创建评论
+  async createComment(createCommentDto: CreateCommentDto): Promise<Comment> {
+    const { content, articleId, authorId } = createCommentDto;
     const article = await this.articleRepository.findOne({
       where: { id: articleId },
     });
-
-    if (!author || !article) {
-      throw new Error('User or Article not found');
+    if (!article) {
+      throw new NotFoundException(`Article with id ${articleId} not found`);
     }
-
-    const comment = this.commentRepository.create({ content, author, article });
-    return await this.commentRepository.save(comment);
-  }
-
-  async findAll(): Promise<Comment[]> {
-    return await this.commentRepository.find({
-      relations: ['author', 'article'],
+    const author = await this.userRepository.findOne({
+      where: { id: authorId },
     });
+    if (!author) {
+      throw new NotFoundException(`User with id ${authorId} not found`);
+    }
+    const comment = this.commentRepository.create({
+      content,
+      article,
+      author,
+    });
+    return this.commentRepository.save(comment);
   }
 
-  async findByArticle(articleId: number): Promise<Comment[]> {
+  // 根据文章 ID 查询评论，带上作者信息
+  async getCommentsByArticle(articleId: number): Promise<Comment[]> {
     return await this.commentRepository.find({
       where: { article: { id: articleId } },
       relations: ['author'],
+      order: { createdAt: 'ASC' },
     });
   }
 
-  async remove(id: number): Promise<void> {
-    await this.commentRepository.delete(id);
+  // 删除评论
+  async deleteComment(commentId: number): Promise<void> {
+    const result = await this.commentRepository.delete(commentId);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Comment with id ${commentId} not found`);
+    }
   }
 }

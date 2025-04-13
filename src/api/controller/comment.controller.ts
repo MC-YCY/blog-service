@@ -1,28 +1,38 @@
-import { Controller, Post, Get, Delete, Body, Param } from '@nestjs/common';
-import { CommentService } from '../../shared/service/comment.service';
+// comment.controller.ts
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CreateCommentDto } from '../../shared/dto/comment.dto';
+import { CommentService } from '../../shared/service/comment.service';
 
 @Controller('comments')
 export class CommentController {
-  constructor(private readonly commentService: CommentService) {}
-
+  constructor(private commentService: CommentService) {}
   @Post()
-  create(@Body() createCommentDto: CreateCommentDto) {
-    return this.commentService.create(createCommentDto);
+  async createComment(@Body() createCommentDto: CreateCommentDto) {
+    const comment = await this.commentService.createComment(createCommentDto);
+    return comment;
   }
 
   @Get()
-  findAll() {
-    return this.commentService.findAll();
-  }
-
-  @Get('article/:articleId')
-  findByArticle(@Param('articleId') articleId: number) {
-    return this.commentService.findByArticle(articleId);
+  async getComments(@Query('articleId') articleId: number) {
+    if (!articleId) {
+      throw new NotFoundException('articleId is required');
+    }
+    const comments = await this.commentService.getCommentsByArticle(articleId);
+    return { success: true, data: comments };
   }
 
   @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.commentService.remove(id);
+  async deleteComment(@Param('id') id: number) {
+    await this.commentService.deleteComment(id);
+    return { success: true };
   }
 }
