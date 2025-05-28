@@ -27,6 +27,8 @@ import { NotificationGateway } from '../notification/notification.gateway';
 import { NotificationListener } from '../notification/notification.listener';
 import { Visit } from './entities/visit.entity';
 import { VisitService } from './service/visit.service';
+import { MessagesService } from './service/messages.service';
+import { Message } from './entities/messages.entity';
 
 @Global()
 @Module({
@@ -60,6 +62,7 @@ import { VisitService } from './service/visit.service';
       Favorite,
       Notification,
       Visit,
+      Message,
     ]),
   ],
   exports: [
@@ -77,6 +80,7 @@ import { VisitService } from './service/visit.service';
     NotificationListener,
     NotificationGateway,
     VisitService,
+    MessagesService,
   ],
   providers: [
     RoleService,
@@ -93,6 +97,7 @@ import { VisitService } from './service/visit.service';
     NotificationListener,
     NotificationGateway,
     VisitService,
+    MessagesService,
   ],
 })
 export class SharedModule {}
