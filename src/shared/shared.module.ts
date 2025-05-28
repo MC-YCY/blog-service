@@ -25,6 +25,8 @@ import { NotificationService } from '../notification/notification.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationGateway } from '../notification/notification.gateway';
 import { NotificationListener } from '../notification/notification.listener';
+import { Visit } from './entities/visit.entity';
+import { VisitService } from './service/visit.service';
 
 @Global()
 @Module({
@@ -57,6 +59,7 @@ import { NotificationListener } from '../notification/notification.listener';
       Image,
       Favorite,
       Notification,
+      Visit,
     ]),
   ],
   exports: [
@@ -73,6 +76,7 @@ import { NotificationListener } from '../notification/notification.listener';
     NotificationService,
     NotificationListener,
     NotificationGateway,
+    VisitService,
   ],
   providers: [
     RoleService,
@@ -88,6 +92,7 @@ import { NotificationListener } from '../notification/notification.listener';
     NotificationService,
     NotificationListener,
     NotificationGateway,
+    VisitService,
   ],
 })
 export class SharedModule {}

@@ -13,6 +13,7 @@ import { UploadController } from './controller/upload.controller';
 import { ImageController } from './controller/image.controller';
 import { ArticleUserController } from './controller/article-user.controller';
 import { NotificationController } from './controller/notification.controller';
+import { VisitController } from './controller/visit.controller';
 
 @Module({
   controllers: [
@@ -28,6 +29,7 @@ import { NotificationController } from './controller/notification.controller';
     ImageController,
     ArticleUserController,
     NotificationController,
+    VisitController,
   ],
   imports: [
     JwtModule.registerAsync({
