@@ -29,6 +29,8 @@ import { Visit } from './entities/visit.entity';
 import { VisitService } from './service/visit.service';
 import { MessagesService } from './service/messages.service';
 import { Message } from './entities/messages.entity';
+import { Diary } from './entities/diary.entity';
+import { DiaryService } from './service/diary.service';
 
 @Global()
 @Module({
@@ -63,6 +65,7 @@ import { Message } from './entities/messages.entity';
       Notification,
       Visit,
       Message,
+      Diary,
     ]),
   ],
   exports: [
@@ -81,6 +84,7 @@ import { Message } from './entities/messages.entity';
     NotificationGateway,
     VisitService,
     MessagesService,
+    DiaryService,
   ],
   providers: [
     RoleService,
@@ -98,6 +102,7 @@ import { Message } from './entities/messages.entity';
     NotificationGateway,
     VisitService,
     MessagesService,
+    DiaryService,
   ],
 })
 export class SharedModule {}
