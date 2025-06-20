@@ -31,6 +31,8 @@ import { MessagesService } from './service/messages.service';
 import { Message } from './entities/messages.entity';
 import { Diary } from './entities/diary.entity';
 import { DiaryService } from './service/diary.service';
+import { CommentWeb } from './entities/comment-web.entity';
+import { CommentWebService } from './service/comment-web.service';
 
 @Global()
 @Module({
@@ -66,6 +68,7 @@ import { DiaryService } from './service/diary.service';
       Visit,
       Message,
       Diary,
+      CommentWeb,
     ]),
   ],
   exports: [
@@ -85,6 +88,7 @@ import { DiaryService } from './service/diary.service';
     VisitService,
     MessagesService,
     DiaryService,
+    CommentWebService,
   ],
   providers: [
     RoleService,
@@ -103,6 +107,7 @@ import { DiaryService } from './service/diary.service';
     VisitService,
     MessagesService,
     DiaryService,
+    CommentWebService,
   ],
 })
 export class SharedModule {}
