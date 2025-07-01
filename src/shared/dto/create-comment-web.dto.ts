@@ -28,4 +28,8 @@ export class CreateCommentWebDto {
   @IsOptional()
   @IsString()
   replyTo?: string;
+
+  @IsOptional()
+  @IsString()
+  replyToId?: string;
 }

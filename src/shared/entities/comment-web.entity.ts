@@ -34,7 +34,9 @@ export class CommentWeb {
   @CreateDateColumn()
   date: Date;
 
-  @ManyToOne(() => CommentWeb, (comment) => comment.children, { nullable: true })
+  @ManyToOne(() => CommentWeb, (comment) => comment.children, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'parentId' })
   parent?: CommentWeb | null;
 
@@ -46,4 +48,7 @@ export class CommentWeb {
 
   @Column({ nullable: true })
   replyTo?: string;
+
+  @Column({ nullable: true })
+  replyToId?: string;
 }
