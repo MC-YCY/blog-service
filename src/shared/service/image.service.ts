@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserService } from './user.service';
 import { Image } from '../entities/image.entity';
-import { getServerIp } from '../utils/server-ip';
 import { unlink } from 'fs-extra';
 
 @Injectable()
@@ -19,7 +18,6 @@ export class ImageService {
   ) {}
 
   async uploadFiles(files: Express.Multer.File[], userId: number) {
-    const ip = getServerIp();
     // 检查用户是否存在
     const user = await this.userService.findOneById(userId);
     if (!user) {
@@ -31,7 +29,7 @@ export class ImageService {
       const image = new Image();
       image.originalname = file.originalname;
       image.mimetype = file.mimetype;
-      image.path = `${ip}/${file.path.replace(/\\/g, '/')}`;
+      image.path = `/${file.path.replace(/\\/g, '/')}`;
       image.size = file.size;
       image.userId = userId;
 
@@ -85,10 +83,8 @@ export class ImageService {
       throw new NotFoundException('图片不存在');
     }
 
-    // 获取服务器 ip，用于从 image.path 中剥离出本地文件路径
-    const ip = getServerIp();
     // 假设 image.path 格式为 `${ip}/${file.path}`，从中提取本地文件路径
-    const localFilePath = image.path.replace(`${ip}/`, '');
+    const localFilePath = image.path.replace(`/`, '');
 
     // 删除本地文件
     try {

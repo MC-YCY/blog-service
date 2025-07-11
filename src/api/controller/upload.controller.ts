@@ -8,7 +8,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
-import { getServerIp } from '../../shared/utils/server-ip';
 import { Public } from '../../shared/decorators/public.decorator';
 
 @Controller('upload')
@@ -35,8 +34,7 @@ export class UploadController {
       return { message: '没有上传文件' };
     }
 
-    const ip = getServerIp();
     // 返回文件的相对路径
-    return { fileUrl: ip + `/uploads/avatars/${file.filename}` };
+    return { fileUrl: `/uploads/avatars/${file.filename}` };
   }
 }
