@@ -40,4 +40,45 @@ export class DiaryService {
 
     return { data, total };
   }
+
+  // 获取某个月份有日记的日期及日记数量
+  async getDiaryDaysByMonth(
+    year: number,
+    month: number,
+    username?: string,
+  ): Promise<{ day: number; count: number }[]> {
+    // Create start and end dates for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // Last day of the month
+
+    // Set time to cover the whole day
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    // Create query builder
+    const queryBuilder = this.diaryRepository
+      .createQueryBuilder('diary')
+      .select('EXTRACT(DAY FROM diary.date)', 'day')
+      .addSelect('COUNT(diary.id)', 'count')
+      .where('diary.date BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .groupBy('EXTRACT(DAY FROM diary.date)')
+      .orderBy('day', 'ASC');
+
+    // Add username filter if provided
+    if (username) {
+      queryBuilder.andWhere('diary.username = :username', { username });
+    }
+
+    // Execute query and return results
+    const results: { day: string; count: string }[] =
+      await queryBuilder.getRawMany();
+
+    return results.map((result) => ({
+      day: parseInt(result.day),
+      count: parseInt(result.count),
+    }));
+  }
 }
