@@ -6,7 +6,7 @@ export class Diary {
   id: number;
   @Column()
   username: string;
-  @Column()
+  @Column({ type: 'text' })
   content: string;
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   date: Date;

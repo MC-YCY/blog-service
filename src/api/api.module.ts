@@ -17,6 +17,7 @@ import { VisitController } from './controller/visit.controller';
 import { MessagesController } from './controller/messages.controller';
 import { DiaryController } from './controller/diary.controller';
 import { CommentWebController } from './controller/comment-web.controller';
+import { LinkController } from './controller/link.controller';
 
 @Module({
   controllers: [
@@ -36,6 +37,7 @@ import { CommentWebController } from './controller/comment-web.controller';
     MessagesController,
     DiaryController,
     CommentWebController,
+    LinkController,
   ],
   imports: [
     JwtModule.registerAsync({

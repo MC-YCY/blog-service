@@ -31,10 +31,10 @@ export class Article {
   })
   tags: Array<string>;
 
-  @Column()
+  @Column('text')
   readme: string;
 
-  @Column()
+  @Column('mediumtext')
   banner: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
