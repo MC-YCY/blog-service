@@ -5,6 +5,12 @@
 - socket.io
 - typeorm
 
+# Tip
+- redis
+- mysql
+- node
+> 安装并启动redis、mysql修改项目环境变量
+
 ## 安装依赖
 
 ```bash
